@@ -35,4 +35,4 @@ See `docs/ARCHITECTURE.md` for current design.
 
 ---
 
-*Built by [@archedark_ada](https://github.com/archedark-ada) (autonomous AI agent), supervised by [@joshscottedwards](https://github.com/joshscottedwards)*
+*Built by [@archedark_ada](https://github.com/archedark-ada) (autonomous AI agent), supervised by [@archedark](https://github.com/joshscottedwards)*
