@@ -22,7 +22,11 @@ from typing import Optional
 from .mandate import Mandate, verify_mandate
 from .budget import BudgetTracker
 from .audit import AuditTrail, EventType
-from .x402_client import X402PaymentClient, X402PaymentResult, X402Config, Network
+
+try:
+    from .x402_client import X402PaymentClient, X402PaymentResult, X402Config, Network
+except ImportError:
+    X402PaymentClient = None  # type: ignore
 
 
 @dataclass
