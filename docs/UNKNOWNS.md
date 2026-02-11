@@ -2,11 +2,26 @@
 
 Questions that need answers before implementation.
 
-**Last Updated:** 2026-02-10 19:35 EST
+**Last Updated:** 2026-02-10 20:26 EST
 
 ---
 
 ## ✅ Resolved (Research Complete)
+
+### Stripe Machine Payments + AP2 (2026-02-10 20:26 EST)
+- ✅ **Stripe AP2 support:** NO - Stripe x402 is payment execution only, no built-in AP2 mandate verification
+- ✅ **Our responsibility:** We implement AP2 authorization layer ourselves, call Stripe for payment execution
+- ✅ **x402 payment flow:** Clear from docs - Server returns 402 → Client pays → Client retries with auth → Server confirms
+- ✅ **Architecture implication:** AP2 (our code) → bagman (our code) → Stripe x402 (their API)
+- ✅ **Documentation:** https://docs.stripe.com/payments/machine/x402 (Stripe preview enabled, pending review)
+
+### x402 Signing Implementation (2026-02-10 19:42 EST)
+- ✅ **Library:** `eth_account.Account` (Ethereum key management)
+- ✅ **Signing method:** EIP-712 typed data signing (NOT JWT)
+- ✅ **Key type:** Ethereum private key (secp256k1)
+- ✅ **API:** `x402.clients.base.x402Client.process_payment(requirements, account)` returns `PaymentPayload`
+- ✅ **Storage:** Private key in 1Password via bagman
+- ✅ **Reference:** https://github.com/google-agentic-commerce/a2a-x402/tree/main/python/samples
 
 ### AP2 Mandates (Basic Structure)
 - ✅ **Mandate format:** Pydantic BaseModels (JSON-serializable), documented in `src/ap2/types/mandate.py`
@@ -24,14 +39,16 @@ Questions that need answers before implementation.
 
 ## Critical (Blocking Implementation)
 
-### AP2 Signing Implementation
+### AP2 Signing Implementation (JWT for Cart Mandates)
+**Note:** x402 payment signing is RESOLVED (uses eth_account + EIP-712). Still need Cart/Payment mandate signing.
+
 - [ ] **JWT signing library:** What Python library for merchant JWT signatures? (PyJWT? python-jose? jwcrypto?)
 - [ ] **Key format for JWT:** RS256 (RSA)? ES256K (secp256k1)? Which to use?
 - [ ] **sd-jwt-vc implementation:** What library for user verifiable credentials? (Reference implementation available?)
-- [ ] **Key generation:** How to generate signing key pairs? (openssl? library-specific?)
+- [ ] **Key generation:** How to generate signing key pairs for JWT? (openssl? library-specific?)
 - [ ] **Key storage:** Store in 1Password via bagman, but what format? (PEM? JWK?)
 
-**Next step:** Read AP2 sample code in `samples/python/scenarios/a2a/human-present/` for signing examples
+**Next step:** Fetch raw Python files from AP2 samples directory to see JWT/sd-jwt-vc signing implementation
 
 ### AP2 Mandate Verification
 - [ ] **Who verifies mandates?** Agent-side before payment? Merchant-side? Payment processor? All three?
@@ -70,20 +87,10 @@ Questions that need answers before implementation.
 ### x402 + AP2 Integration
 - [ ] Is there a standard way to attach AP2 mandates to x402 payments?
 - [ ] Or do we build this integration ourselves?
-- [ ] How do bagman session keys work with x402 signature format?
+- [ ] How do bagman session keys (Ethereum format) work with x402 signature format (also Ethereum)?
 - [ ] What's the error handling for failed payments?
 
-**Research source:** https://github.com/google-a2a/a2a-x402
-
-### Stripe Machine Payments
-- [ ] Does Stripe support AP2 mandate verification natively?
-- [ ] Or do we verify mandates ourselves before calling Stripe?
-- [ ] Can bagman session keys work with Stripe's API?
-- [ ] What's the webhook flow for payment confirmation?
-- [ ] How to map crypto wallet address to Stripe account?
-- [ ] How to access preview docs? (Currently 404 without Stripe login)
-
-**Research source:** https://docs.stripe.com/payments/machine-payments
+**Research source:** https://github.com/google-agentic-commerce/a2a-x402
 
 ---
 
@@ -163,29 +170,30 @@ Questions that need answers before implementation.
 - ✅ Documented three mandate types (Intent, Cart, Payment)
 - ✅ Findings in `docs/AP2_RESEARCH.md`
 
+**Session 4: x402 Signing + Stripe Integration (2026-02-10 evening)**
+- ✅ Found x402 payment signing implementation (eth_account + EIP-712)
+- ✅ Josh enabled Stripe crypto payments (pending review)
+- ✅ Read Stripe x402 docs - clarified Stripe does NOT handle AP2
+- ✅ Architecture decision: AP2/bagman layers are our code, Stripe is payment execution only
+- ✅ Updated `docs/UNKNOWNS.md` with findings
+
 ---
 
 ### 🔄 Next Sessions
 
-**Session 4: AP2 Signing Implementation (next)**
-1. Read AP2 sample code (`samples/python/scenarios/a2a/human-present/`)
-2. Find JWT signing implementation (library, key format)
-3. Find sd-jwt-vc signing implementation
+**Session 5: AP2 JWT/sd-jwt-vc Signing (next)**
+1. Fetch raw Python files from AP2 `samples/python/scenarios/a2a/human-present/`
+2. Find JWT signing implementation for Cart Mandates (library, key format)
+3. Find sd-jwt-vc signing implementation for Payment Mandates
 4. Document exact code patterns
-5. Create signing test script
+5. Update UNKNOWNS.md with findings
 
-**Session 5: Budget Tracking Architecture**
+**Session 6: Budget Tracking Architecture**
 1. Design separate state management system
 2. Choose storage (Redis? PostgreSQL? Smart contract?)
 3. Design atomic update patterns
 4. Design concurrent transaction handling
 5. Document in `docs/BUDGET_TRACKING.md`
-
-**Session 6: Stripe + AP2 Integration Check**
-1. Review Stripe Machine Payments docs (when accessible)
-2. Check for native AP2 support
-3. Design verification flow if we need to build it
-4. Test with Stripe sandbox (if available)
 
 **Session 7: Proof of Concept**
 1. Install AP2 types: `uv pip install git+https://github.com/google-agentic-commerce/AP2.git@main`
