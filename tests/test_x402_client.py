@@ -11,15 +11,14 @@ class TestX402Config:
         config = X402Config()
         assert config.network == Network.BASE_SEPOLIA
         assert config.max_amount_usd == 10.0
-        assert "x402.org" in config.effective_facilitator_url
 
     def test_mainnet(self):
         config = X402Config(network=Network.BASE_MAINNET)
         assert config.network == Network.BASE_MAINNET
 
-    def test_custom_facilitator(self):
-        config = X402Config(facilitator_url="https://custom.facilitator.com")
-        assert config.effective_facilitator_url == "https://custom.facilitator.com"
+    def test_custom_timeout(self):
+        config = X402Config(timeout_seconds=60.0)
+        assert config.timeout_seconds == 60.0
 
 
 class TestX402PaymentClient:
