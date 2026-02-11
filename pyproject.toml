@@ -1,0 +1,32 @@
+[project]
+name = "trustee"
+version = "0.1.0"
+description = "Autonomous agent payment infrastructure with cryptographic delegation"
+requires-python = ">=3.11"
+dependencies = [
+    "eth-account>=0.13.0",
+    "pydantic>=2.0",
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+ap2 = [
+    "ap2 @ git+https://github.com/google-agentic-commerce/AP2.git@main",
+]
+x402 = [
+    "x402",
+]
+
+[project.scripts]
+trustee = "trustee.cli:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
