@@ -184,12 +184,13 @@ class Bagman:
 
     def get_session(self, session_id: str) -> SessionState:
         """Get a session by ID. Raises if expired or not found."""
+        from .errors import SessionNotFoundError, SessionExpiredError
         session = self._sessions.get(session_id)
         if session is None:
-            raise ValueError(f"Session not found: {session_id}")
+            raise SessionNotFoundError(f"Session not found: {session_id}")
         if session.is_expired:
             self.destroy_session(session_id)
-            raise ValueError(f"Session expired: {session_id}")
+            raise SessionExpiredError(f"Session expired: {session_id}")
         return session
 
     def get_signer(self, session_id: str) -> "BagmanSigner":

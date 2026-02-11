@@ -5,6 +5,7 @@ import pytest
 from eth_account import Account
 
 from trustee.bagman import Bagman, BagmanSigner, SessionConfig, SessionState
+from trustee.errors import SessionExpiredError, SessionNotFoundError
 
 
 class TestSessionConfig:
@@ -161,12 +162,12 @@ class TestBagman:
         )
         bagman._sessions[session.session_id] = session
 
-        with pytest.raises(ValueError, match="expired"):
+        with pytest.raises(SessionExpiredError):
             bagman.get_session(session.session_id)
 
     def test_missing_session_raises(self):
         bagman = Bagman()
-        with pytest.raises(ValueError, match="not found"):
+        with pytest.raises(SessionNotFoundError):
             bagman.get_session("bm-nonexistent")
 
     def test_destroy_all(self):
