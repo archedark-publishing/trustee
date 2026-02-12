@@ -18,7 +18,12 @@ from pathlib import Path
 from typing import Optional
 from contextlib import contextmanager
 
-from .money import format_usd_from_micros, micros_to_usd_float, usd_to_micros
+from .money import (
+    amount_usd_to_micros,
+    format_usd_from_micros,
+    limit_usd_to_micros,
+    micros_to_usd_float,
+)
 from .storage import ensure_private_dir, ensure_private_file
 
 
@@ -260,8 +265,8 @@ class BudgetTracker:
         max_per_tx_usd: float,
         daily_limit_usd: Optional[float],
     ) -> tuple[bool, str]:
-        max_total_micros = usd_to_micros(max_total_usd)
-        max_per_tx_micros = usd_to_micros(max_per_tx_usd)
+        max_total_micros = limit_usd_to_micros(max_total_usd)
+        max_per_tx_micros = limit_usd_to_micros(max_per_tx_usd)
 
         if amount_micros <= 0:
             return False, "Amount must be positive"
@@ -282,7 +287,7 @@ class BudgetTracker:
             )
 
         if daily_limit_usd is not None:
-            daily_limit_micros = usd_to_micros(daily_limit_usd)
+            daily_limit_micros = limit_usd_to_micros(daily_limit_usd)
             remaining_daily = daily_limit_micros - daily_spent_micros
             if amount_micros > remaining_daily:
                 return False, (
@@ -305,7 +310,7 @@ class BudgetTracker:
         """Check if a proposed spend is within mandate limits."""
         with self._integrity_guard():
             self._verify_integrity()
-            amount_micros = usd_to_micros(amount_usd)
+            amount_micros = amount_usd_to_micros(amount_usd)
             with self._connect() as conn:
                 self._ensure_budget_row(conn, mandate_id)
                 self._maybe_reset_daily(conn, mandate_id)
@@ -348,7 +353,7 @@ class BudgetTracker:
         """
         with self._integrity_guard():
             self._verify_integrity()
-            amount_micros = usd_to_micros(amount_usd)
+            amount_micros = amount_usd_to_micros(amount_usd)
 
             with self._connect() as conn:
                 conn.execute("BEGIN IMMEDIATE")
@@ -535,7 +540,7 @@ class BudgetTracker:
         """
         with self._integrity_guard():
             self._verify_integrity()
-            amount_micros = usd_to_micros(amount_usd)
+            amount_micros = amount_usd_to_micros(amount_usd)
             with self._connect() as conn:
                 conn.execute("BEGIN IMMEDIATE")
                 self._ensure_budget_row(conn, mandate_id)
@@ -610,7 +615,7 @@ class BudgetTracker:
     def get_summary(self, mandate_id: str, max_total_usd: float) -> dict:
         """Get a human-readable budget summary."""
         state = self.get_state(mandate_id)
-        max_total_micros = usd_to_micros(max_total_usd)
+        max_total_micros = limit_usd_to_micros(max_total_usd)
         remaining_micros = max_total_micros - state.total_spent_micros
         utilization = (
             f"{(state.total_spent_micros / max_total_micros * 100):.1f}%"

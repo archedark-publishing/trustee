@@ -17,7 +17,7 @@ from typing import Optional
 from eth_account import Account
 from eth_account.messages import encode_typed_data
 
-from .money import usd_to_micros
+from .money import limit_usd_to_micros
 
 
 DEFAULT_NETWORK = "eip155:84532"
@@ -226,4 +226,4 @@ def _allowlist_hash(values: list[str]) -> str:
 
 
 def _usd_to_micros(usd: float) -> int:
-    return usd_to_micros(usd)
+    return limit_usd_to_micros(usd)

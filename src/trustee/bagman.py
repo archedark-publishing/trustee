@@ -21,7 +21,7 @@ from typing import Any, Optional
 
 from eth_account import Account
 
-from .money import micros_to_usd_float, usd_to_micros
+from .money import amount_usd_to_micros, limit_usd_to_micros, micros_to_usd_float
 
 logger = logging.getLogger(__name__)
 
@@ -75,11 +75,11 @@ class SessionState:
 
     @property
     def max_spend_micros(self) -> int:
-        return usd_to_micros(self.config.max_spend_usd)
+        return limit_usd_to_micros(self.config.max_spend_usd)
 
     @property
     def max_per_tx_micros(self) -> int:
-        return usd_to_micros(self.config.max_per_tx_usd)
+        return limit_usd_to_micros(self.config.max_per_tx_usd)
 
     def check_spend_micros(self, amount_micros: int) -> tuple[bool, str]:
         if self.is_expired:
@@ -166,8 +166,36 @@ class Bagman:
         op_field: str = "credential",
         config: Optional[SessionConfig] = None,
     ) -> SessionState:
-        key = self._load_key_from_1password(op_item, op_vault, op_field)
-        return self.create_session_from_private_key(key, config=config)
+        config = config or SessionConfig()
+        session_id = self._generate_session_id()
+        created_at = time.time()
+
+        result = self._rpc(
+            "create_session",
+            session_id=session_id,
+            created_at=created_at,
+            config=asdict(config),
+            op_item=op_item,
+            op_vault=op_vault,
+            op_field=op_field,
+        )
+        wallet_address = str(result["wallet_address"])
+
+        session = SessionState(
+            session_id=session_id,
+            created_at=created_at,
+            config=config,
+            wallet_address=wallet_address,
+        )
+        self._sessions[session_id] = session
+        logger.info(
+            "Bagman session created: %s (wallet: %s, ttl: %ds, cap: $%.2f)",
+            session_id,
+            wallet_address,
+            config.ttl_seconds,
+            config.max_spend_usd,
+        )
+        return session
 
     def create_session_from_private_key(
         self,
@@ -236,21 +264,6 @@ class Bagman:
             self.destroy_session(sid)
         return [s.to_dict() for s in self._sessions.values()]
 
-    def _load_key_from_1password(self, item: str, vault: str, field: str) -> str:
-        result = subprocess.run(
-            ["op", "item", "get", item, "--vault", vault, "--format", "json"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"1Password error: {result.stderr.strip()}")
-        fields = json.loads(result.stdout)["fields"]
-        key = next((f["value"] for f in fields if f.get("label") == field), None)
-        if not key:
-            raise ValueError(f"Field '{field}' not found in 1Password item '{item}'")
-        return key
-
     def _generate_session_id(self) -> str:
         entropy = f"{time.time()}-{os.urandom(16).hex()}"
         return f"bm-{hashlib.sha256(entropy.encode()).hexdigest()[:12]}"
@@ -270,7 +283,7 @@ class Bagman:
         result = self._rpc(
             "check_and_record_spend",
             session_id=session_id,
-            amount_micros=usd_to_micros(amount_usd),
+            amount_micros=amount_usd_to_micros(amount_usd),
         )
         session.total_spent_micros = int(result["total_spent_micros"])
         session.tx_count = int(result["tx_count"])
@@ -460,7 +473,15 @@ def _signer_worker(conn) -> None:
 
                 if cmd == "create_session":
                     session_id = str(req["session_id"])
-                    key = str(req["private_key"])
+                    key = req.get("private_key")
+                    if key is None:
+                        key = _load_key_from_1password_worker(
+                            item=str(req["op_item"]),
+                            vault=str(req["op_vault"]),
+                            field=str(req.get("op_field", "credential")),
+                        )
+                    else:
+                        key = str(key)
                     created_at = float(req["created_at"])
                     config = dict(req["config"])
                     account = Account.from_key(key)
@@ -611,8 +632,8 @@ def _ensure_not_expired(session_id: str, session: dict[str, Any]) -> None:
 
 
 def _check_spend(session: dict[str, Any], amount_micros: int) -> tuple[bool, str]:
-    max_spend_micros = usd_to_micros(float(session["config"]["max_spend_usd"]))
-    max_per_tx_micros = usd_to_micros(float(session["config"]["max_per_tx_usd"]))
+    max_spend_micros = limit_usd_to_micros(float(session["config"]["max_spend_usd"]))
+    max_per_tx_micros = limit_usd_to_micros(float(session["config"]["max_per_tx_usd"]))
     total_spent_micros = int(session["total_spent_micros"])
 
     if amount_micros > max_per_tx_micros:
@@ -629,3 +650,19 @@ def _check_spend(session: dict[str, Any], amount_micros: int) -> tuple[bool, str
             f"> ${float(session['config']['max_spend_usd']):.6f})",
         )
     return True, "OK"
+
+
+def _load_key_from_1password_worker(item: str, vault: str, field: str) -> str:
+    result = subprocess.run(
+        ["op", "item", "get", item, "--vault", vault, "--format", "json"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"1Password error: {result.stderr.strip()}")
+    fields = json.loads(result.stdout)["fields"]
+    key = next((f["value"] for f in fields if f.get("label") == field), None)
+    if not key:
+        raise ValueError(f"Field '{field}' not found in 1Password item '{item}'")
+    return key

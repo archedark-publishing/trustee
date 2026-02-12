@@ -11,11 +11,11 @@ Cryptographically enforced spending delegation: Human sets bounds → Agent oper
 | Component | Status | Description |
 |-----------|--------|-------------|
 | **Mandate System** | ✅ Complete | EIP-712 signed spending authorizations |
-| **Budget Tracking** | ✅ Complete | Per-tx, daily, and total limits with atomic writes |
+| **Budget Tracking** | ✅ Complete | Per-tx/daily/total limits with transactional reserve+commit |
 | **x402 Payments** | ✅ Complete | Real USDC payments on Base via Coinbase facilitator |
 | **Bagman Security** | ✅ Complete | Session-based key management with auto-expiry |
 | **Audit Trail** | ✅ Complete | Append-only JSONL event logging |
-| **48 tests** | ✅ Passing | Full coverage across all modules |
+| **52 tests** | ✅ Passing | Full coverage across all modules |
 
 **First testnet payment:** Feb 10, 2026 — $0.001 USDC on Base Sepolia ([view on Basescan](https://sepolia.basescan.org/token/0x036cbd53842c5426634e7929541ec2318f3dcf7e?a=0x273326453960864fba4d2f6cf09d65fa13e45297))
 
@@ -75,7 +75,7 @@ trustee demo
 
 ```
 1. Human creates mandate (spending authorization, EIP-712 signed)
-2. Bagman loads wallet key from 1Password into time-limited session
+2. Bagman worker process loads wallet key from 1Password into time-limited session
 3. Agent receives BagmanSigner (can sign, but never sees the key)
 4. Agent hits x402-protected endpoint → gets 402 Payment Required
 5. x402 SDK signs EIP-3009 TransferWithAuthorization
@@ -91,7 +91,7 @@ trustee demo
 | `mandate.py` | EIP-712 signed spending authorizations |
 | `bagman.py` | Session-based key management (1Password → time-limited sessions) |
 | `x402_client.py` | Real x402 payments via official Coinbase SDK |
-| `budget.py` | Spending state tracking with atomic writes & file locking |
+| `budget.py` | Transactional spending state with idempotency and tamper checks |
 | `payment.py` | Payment orchestration (verify → check → pay → record) |
 | `audit.py` | Append-only event log for accountability |
 | `cli.py` | Command-line interface for all operations |
@@ -104,7 +104,7 @@ The agent **never** sees the private key. Instead:
 from trustee.bagman import Bagman, SessionConfig
 from trustee.x402_client import X402PaymentClient, X402Config, Network
 
-# Create a time-limited session (key loaded from 1Password)
+# Create a time-limited session (worker loads key from 1Password)
 bagman = Bagman()
 session = bagman.create_session(
     op_item="trustee-wallet",
@@ -163,12 +163,14 @@ Supports:
 - ✅ **Prompt injection** — Can't exceed mandate/session limits even if manipulated
 - ✅ **Credential leaks** — Keys never stored in files; 1Password → memory → wiped
 - ✅ **Overspending** — Per-tx + daily + total limits, cryptographically + budget enforced
+- ✅ **Local tampering** — Budget/audit integrity checks fail closed on modification
 - ✅ **Mandate tampering** — EIP-712 signature verification catches any modification
+- ✅ **Rounding drift** — Conservative rounding: amounts up, limits down
 
 **Trust assumptions:**
 - 1Password service account token is secure
 - Delegator's private key remains secure
-- Budget state file integrity (future: on-chain verification)
+- Host OS/process isolation and endpoint integrity
 
 ## CLI
 
@@ -180,6 +182,11 @@ trustee budget     # Check spending status
 trustee audit      # View audit trail
 trustee demo       # Run full demo flow
 ```
+
+Key handling order of preference:
+1. Best: Bagman session flow (`Bagman.create_session(...)`) with 1Password reference.
+2. Good: Hidden CLI prompt entry for key material.
+3. Unsafe fallback: `--unsafe-allow-key-arg` (explicit opt-in; can leak via shell/process args).
 
 ## Demo Output
 
@@ -231,7 +238,7 @@ trustee demo       # Run full demo flow
 - **1Password CLI** (`op`) for secure key storage
 - **Click** for CLI
 - **Pydantic** for data validation
-- **pytest** — 48 tests passing
+- **pytest** — 52 tests passing
 
 ## Why "Trustee"?
 
