@@ -26,6 +26,7 @@ def mandate(accounts):
         daily_limit_usd=3.00,
         duration_hours=24.0,
         description="Test spending",
+        network="eip155:84532",
     )
 
 
@@ -95,3 +96,77 @@ class TestPaymentFlow:
         event_types = [e.event_type for e in events]
         assert "mandate_verified" in event_types
         assert "payment_completed" in event_types
+
+    def test_disallowed_merchant_denied(self, accounts, executor):
+        delegator, delegate = accounts
+        restricted = create_mandate(
+            delegator_key=delegator.key.hex(),
+            delegate_address=delegate.address,
+            max_total_usd=5.0,
+            max_per_tx_usd=1.0,
+            duration_hours=24.0,
+            allowed_merchants=["approved.example.com"],
+        )
+        result = executor.execute(
+            restricted,
+            PaymentRequest(
+                mandate_id=restricted.mandate_id,
+                amount_usd=0.25,
+                merchant="RandomMerchant",
+                merchant_endpoint="https://not-approved.example.com/pay",
+                description="Should fail",
+            ),
+        )
+        assert not result.success
+        assert "Merchant" in (result.reason or "")
+
+    def test_disallowed_category_denied(self, accounts, executor):
+        delegator, delegate = accounts
+        restricted = create_mandate(
+            delegator_key=delegator.key.hex(),
+            delegate_address=delegate.address,
+            max_total_usd=5.0,
+            max_per_tx_usd=1.0,
+            duration_hours=24.0,
+            allowed_categories=["infra"],
+        )
+        result = executor.execute(
+            restricted,
+            PaymentRequest(
+                mandate_id=restricted.mandate_id,
+                amount_usd=0.25,
+                merchant="Approved",
+                description="Should fail",
+                category="marketing",
+            ),
+        )
+        assert not result.success
+        assert "Category" in (result.reason or "")
+
+    def test_network_mismatch_denied(self, mandate, executor):
+        result = executor.execute(
+            mandate,
+            PaymentRequest(
+                mandate_id=mandate.mandate_id,
+                amount_usd=0.25,
+                merchant="OpenAI",
+                description="network mismatch",
+                network="eip155:8453",
+            ),
+        )
+        assert not result.success
+        assert "network" in (result.reason or "").lower()
+
+    def test_idempotent_duplicate_returns_single_settlement(self, mandate, executor):
+        req = PaymentRequest(
+            mandate_id=mandate.mandate_id,
+            amount_usd=0.25,
+            merchant="OpenAI",
+            description="idempotent",
+            idempotency_key="intent-fixed",
+        )
+        first = executor.execute(mandate, req)
+        second = executor.execute(mandate, req)
+        assert first.success
+        assert second.success
+        assert first.tx_id == second.tx_id

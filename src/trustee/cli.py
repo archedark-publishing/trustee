@@ -19,11 +19,13 @@ from pathlib import Path
 from typing import Optional
 
 import click
+from click.core import ParameterSource
 
-from .mandate import Mandate, create_mandate, verify_mandate
+from .mandate import DEFAULT_NETWORK, Mandate, create_mandate, verify_mandate
 from .budget import BudgetTracker
 from .payment import PaymentExecutor, PaymentRequest, PaymentResult
 from .audit import AuditTrail, EventType
+from .storage import ensure_private_dir, ensure_private_file, safe_child_path
 
 
 # ── Storage ───────────────────────────────────────────────────────
@@ -33,20 +35,22 @@ MANDATES_DIR = TRUSTEE_DIR / "mandates"
 
 
 def _ensure_dirs():
-    TRUSTEE_DIR.mkdir(parents=True, exist_ok=True)
-    MANDATES_DIR.mkdir(parents=True, exist_ok=True)
+    ensure_private_dir(TRUSTEE_DIR)
+    ensure_private_dir(MANDATES_DIR)
 
 
 def _save_mandate(mandate: Mandate) -> Path:
     _ensure_dirs()
-    path = MANDATES_DIR / f"{mandate.mandate_id}.json"
+    path = safe_child_path(MANDATES_DIR, mandate.mandate_id, ".json")
     with open(path, "w") as f:
         json.dump(mandate.to_dict(), f, indent=2)
+    ensure_private_file(path)
     return path
 
 
 def _load_mandate(mandate_id: str) -> Optional[Mandate]:
-    path = MANDATES_DIR / f"{mandate_id}.json"
+    _ensure_dirs()
+    path = safe_child_path(MANDATES_DIR, mandate_id, ".json")
     if not path.exists():
         # Try searching by prefix
         matches = list(MANDATES_DIR.glob(f"*{mandate_id}*.json"))
@@ -76,6 +80,12 @@ def main():
 @main.command()
 @click.option("--delegator-key", prompt=True, hide_input=True,
               help="Delegator's Ethereum private key (hex)")
+@click.option(
+    "--unsafe-allow-key-arg",
+    is_flag=True,
+    default=False,
+    help="Allow passing --delegator-key via argv (unsafe; can leak in shell/process history).",
+)
 @click.option("--delegate-address", prompt=True,
               help="Delegate's Ethereum address")
 @click.option("--max-total", type=float, prompt=True,
@@ -86,19 +96,36 @@ def main():
               help="Optional daily spending cap (USD)")
 @click.option("--duration", type=float, default=24.0,
               help="Mandate duration in hours (default: 24)")
+@click.option("--network", type=str, default=DEFAULT_NETWORK,
+              help="Mandate network in CAIP-2 format (default: eip155:84532)")
 @click.option("--description", default="General spending authorization",
               help="Human-readable description")
 def create(
     delegator_key: str,
+    unsafe_allow_key_arg: bool,
     delegate_address: str,
     max_total: float,
     max_per_tx: float,
     daily_limit: Optional[float],
     duration: float,
+    network: str,
     description: str,
 ):
     """Create and sign a new spending mandate."""
     audit = AuditTrail()
+
+    ctx = click.get_current_context(silent=True)
+    key_from_argv = (
+        ctx is not None
+        and ctx.get_parameter_source("delegator_key") == ParameterSource.COMMANDLINE
+    )
+    if key_from_argv and not unsafe_allow_key_arg:
+        click.echo(
+            "❌ Refusing --delegator-key from argv. Re-run with prompt input or pass "
+            "--unsafe-allow-key-arg to acknowledge the risk.",
+            err=True,
+        )
+        sys.exit(1)
     
     try:
         mandate = create_mandate(
@@ -108,6 +135,7 @@ def create(
             max_per_tx_usd=max_per_tx,
             duration_hours=duration,
             daily_limit_usd=daily_limit,
+            network=network,
             description=description,
         )
     except Exception as e:
@@ -125,6 +153,7 @@ def create(
             "max_total_usd": max_total,
             "max_per_tx_usd": max_per_tx,
             "duration_hours": duration,
+            "network": network,
         },
     )
     
@@ -165,12 +194,18 @@ def verify(mandate_id: str):
 @click.option("--amount", type=float, prompt=True, help="Amount in USD")
 @click.option("--merchant", prompt=True, help="Merchant name")
 @click.option("--description", default="Payment", help="Payment description")
+@click.option("--merchant-endpoint", default=None, help="x402-protected endpoint URL")
+@click.option("--category", default=None, help="Payment category label")
+@click.option("--network", default=None, help="Active payment network (CAIP-2)")
 @click.option("--dry-run", is_flag=True, help="Simulate without executing")
 def pay(
     mandate_id: str,
     amount: float,
     merchant: str,
     description: str,
+    merchant_endpoint: Optional[str],
+    category: Optional[str],
+    network: Optional[str],
     dry_run: bool,
 ):
     """Execute a payment against a mandate."""
@@ -188,6 +223,9 @@ def pay(
         amount_usd=amount,
         merchant=merchant,
         description=description,
+        merchant_endpoint=merchant_endpoint,
+        category=category,
+        network=network,
     )
     
     if dry_run:

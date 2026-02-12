@@ -29,6 +29,7 @@ def mandate(delegator, delegate):
         daily_limit_usd=5.0,
         duration_hours=24.0,
         description="Test mandate",
+        network="eip155:84532",
     )
 
 
@@ -77,6 +78,18 @@ class TestMandateVerification:
     def test_tampered_mandate(self, mandate):
         # Tamper with the amount after signing
         mandate.spending_limit.max_total_usd = 999999.0
+        valid, reason = verify_mandate(mandate)
+        assert not valid
+        assert "mismatch" in reason.lower() or "failed" in reason.lower()
+
+    def test_tampered_allowlist_fails(self, mandate):
+        mandate.spending_limit.allowed_merchants = ["evil.example.com"]
+        valid, reason = verify_mandate(mandate)
+        assert not valid
+        assert "mismatch" in reason.lower() or "failed" in reason.lower()
+
+    def test_tampered_network_fails(self, mandate):
+        mandate.network = "eip155:8453"
         valid, reason = verify_mandate(mandate)
         assert not valid
         assert "mismatch" in reason.lower() or "failed" in reason.lower()

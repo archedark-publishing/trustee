@@ -1,6 +1,7 @@
 """Tests for x402 payment client integration."""
 
 import pytest
+from types import SimpleNamespace
 from eth_account import Account
 
 from trustee.x402_client import X402PaymentClient, X402Config, Network, X402PaymentResult
@@ -47,6 +48,57 @@ class TestX402PaymentClient:
         acct = Account.create()
         with X402PaymentClient.from_private_key(acct.key.hex()) as client:
             assert client.address == acct.address
+
+    def test_validate_402_requirement_over_amount_denied(self, client):
+        req = SimpleNamespace(
+            network="eip155:84532",
+            pay_to="0x1111111111111111111111111111111111111111",
+            amount="2000000",  # 2.0 USDC
+            asset="0x0000000000000000000000000000000000000000",
+        )
+        payment_required = SimpleNamespace(accepts=[req])
+        result = client._validate_payment_required(
+            payment_required=payment_required,
+            expected_amount_usd=1.0,
+            allowed_networks=["eip155:84532"],
+            allowed_payees=None,
+        )
+        assert isinstance(result, str)
+        assert "exceeds approved max" in result
+
+    def test_validate_402_requirement_payee_denied(self, client):
+        req = SimpleNamespace(
+            network="eip155:84532",
+            pay_to="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            amount="100000",
+            asset="0x0000000000000000000000000000000000000000",
+        )
+        payment_required = SimpleNamespace(accepts=[req])
+        result = client._validate_payment_required(
+            payment_required=payment_required,
+            expected_amount_usd=1.0,
+            allowed_networks=["eip155:84532"],
+            allowed_payees=["0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],
+        )
+        assert isinstance(result, str)
+        assert "payee" in result.lower()
+
+    def test_validate_402_requirement_network_denied(self, client):
+        req = SimpleNamespace(
+            network="eip155:8453",
+            pay_to="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            amount="100000",
+            asset="0x0000000000000000000000000000000000000000",
+        )
+        payment_required = SimpleNamespace(accepts=[req])
+        result = client._validate_payment_required(
+            payment_required=payment_required,
+            expected_amount_usd=1.0,
+            allowed_networks=["eip155:84532"],
+            allowed_payees=None,
+        )
+        assert isinstance(result, str)
+        assert "network" in result.lower()
 
 
 class TestX402PaymentResult:
