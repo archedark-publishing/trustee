@@ -11,9 +11,17 @@ This directory contains the AP2 on-chain mandate registry and Foundry-based test
 
 ```bash
 cd contracts
-forge install foundry-rs/forge-std
+forge install --no-git foundry-rs/forge-std
 forge build
 forge test -vv
+```
+
+Or with make targets:
+
+```bash
+cd contracts
+make install
+make test
 ```
 
 ## Environment Variables
@@ -30,23 +38,38 @@ forge test -vv
 
 ```bash
 cd contracts
-forge script script/DeployMandateRegistry.s.sol:DeployMandateRegistry \
-  --rpc-url base_sepolia \
-  --broadcast \
-  --verify \
-  -vvvv
+make deploy-sepolia
 ```
 
 ### Base Mainnet
 
 ```bash
 cd contracts
-forge script script/DeployMandateRegistry.s.sol:DeployMandateRegistry \
-  --rpc-url base \
-  --broadcast \
-  --verify \
-  -vvvv
+make deploy-mainnet
 ```
+
+## Post-Deploy Smoke Test
+
+Set:
+- `MANDATE_REGISTRY_ADDRESS`
+- `SMOKE_AGENT_ADDRESS`
+- `DEPLOYER_PRIVATE_KEY`
+- Optional `SMOKE_ISSUER_PRIVATE_KEY` (defaults to deployer key)
+
+Then run:
+
+```bash
+cd contracts
+make smoke-sepolia
+# or
+make smoke-mainnet
+```
+
+Smoke script validates:
+1. trusted issuer update
+2. mandate issuance
+3. mandate revocation
+4. registry status consistency
 
 ## Test Focus (Phase 0)
 

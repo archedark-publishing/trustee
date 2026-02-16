@@ -45,7 +45,7 @@
 - [ ] Record addresses and ABI config in repo config docs.
 
 ### Phase 0 Exit Criteria
-- [ ] All contract tests passing.
+- [x] All contract tests passing.
 - [ ] Sepolia + mainnet addresses documented.
 - [ ] Basescan verification links recorded.
 
