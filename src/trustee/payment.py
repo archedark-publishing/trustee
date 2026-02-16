@@ -21,6 +21,7 @@ from urllib.parse import urlparse
 from .audit import AuditTrail, EventType
 from .budget import BudgetTracker
 from .mandate import Mandate, verify_mandate
+from .mandate_validator import MandateValidator, TransactionIntent
 
 try:
     from .x402_client import X402PaymentClient
@@ -40,6 +41,10 @@ class PaymentRequest:
     category: Optional[str] = None
     network: Optional[str] = None
     idempotency_key: Optional[str] = None
+    mandate_hash: Optional[str] = None
+    to_address: Optional[str] = None
+    asset_id: Optional[str] = None
+    amount_base_units: Optional[int] = None
 
 
 @dataclass
@@ -71,11 +76,13 @@ class PaymentExecutor:
         audit: AuditTrail,
         dry_run: bool = False,
         x402_client: Optional[X402PaymentClient] = None,
+        mandate_validator: Optional[MandateValidator] = None,
     ):
         self.budget = budget
         self.audit = audit
         self.dry_run = dry_run
         self.x402_client = x402_client
+        self.mandate_validator = mandate_validator
 
     def execute(self, mandate: Mandate, request: PaymentRequest) -> PaymentResult:
         valid, reason = verify_mandate(mandate)
@@ -99,6 +106,35 @@ class PaymentExecutor:
                 reason=f"Mandate network {mandate.network} does not match active network {active_network}",
                 amount_usd=request.amount_usd,
             )
+
+        if self.mandate_validator is not None:
+            if request.asset_id is None or request.to_address is None:
+                return PaymentResult(
+                    success=False,
+                    reason="AP2 validation requires asset_id and to_address",
+                    amount_usd=request.amount_usd,
+                )
+            amount_base_units = (
+                int(request.amount_base_units)
+                if request.amount_base_units is not None
+                else int(round(request.amount_usd * 1_000_000))
+            )
+            valid_ap2, ap2_error, _ = self.mandate_validator.validate_transaction(
+                TransactionIntent(
+                    network=active_network,
+                    asset_id=request.asset_id,
+                    recipient=request.to_address,
+                    amount_base_units=amount_base_units,
+                    mandate_hash=request.mandate_hash,
+                ),
+                mandate.delegate_address,
+            )
+            if not valid_ap2:
+                return PaymentResult(
+                    success=False,
+                    reason=f"Mandate validation failed: {ap2_error}",
+                    amount_usd=request.amount_usd,
+                )
 
         merchant_ok, merchant_reason = _enforce_merchant_category_policy(mandate, request)
         if not merchant_ok:

@@ -91,39 +91,39 @@
 ## Phase 2: Steward Enforcement Integration
 
 ### 2.1 Validator Implementation
-- [ ] Add `src/trustee/mandate_validator.py`.
-- [ ] Implement validation pipeline in required order from spec.
-- [ ] Add deterministic mandate selection rules:
-- [ ] explicit `mandate_hash` path
-- [ ] single-candidate auto-select
-- [ ] multi-candidate ambiguity rejection
-- [ ] Verify EIP-712 signer and trusted issuer binding.
-- [ ] Validate payload hash against canonical payload bytes.
+- [x] Add `src/trustee/mandate_validator.py`.
+- [x] Implement validation pipeline in required order from spec.
+- [x] Add deterministic mandate selection rules:
+- [x] explicit `mandate_hash` path
+- [x] single-candidate auto-select
+- [x] multi-candidate ambiguity rejection
+- [x] Verify EIP-712 signer and trusted issuer binding.
+- [x] Validate payload hash against canonical payload bytes.
 
 ### 2.2 Signing Path Integration
-- [ ] Integrate validator into signing boundary in `src/trustee/steward.py` and/or payment orchestration.
-- [ ] Require live `getMandateStatus` check immediately before signing.
-- [ ] Enforce fail-closed on RPC/store/validation errors.
-- [ ] Reject when agent is paused.
+- [x] Integrate validator into signing boundary in `src/trustee/steward.py` and/or payment orchestration.
+- [x] Require live `getMandateStatus` check immediately before signing.
+- [x] Enforce fail-closed on RPC/store/validation errors.
+- [x] Reject when agent is paused.
 
 ### 2.3 Budget Race Safety
-- [ ] Reuse atomic reserve/commit/rollback path from `src/trustee/budget.py`.
-- [ ] Remove or block non-atomic read-then-write spending checks.
-- [ ] Ensure rollback on downstream signing/submission failures.
+- [x] Reuse atomic reserve/commit/rollback path from `src/trustee/budget.py`.
+- [x] Remove or block non-atomic read-then-write spending checks.
+- [x] Ensure rollback on downstream signing/submission failures.
 
 ### 2.4 Tests
-- [ ] Unit tests for mandate matching and ambiguity rejection.
-- [ ] Integration test: issue -> validate -> sign success path.
-- [ ] Integration test: revoke -> immediate rejection path.
-- [ ] Integration test: paused agent rejection path.
-- [ ] Integration test: metadata hash mismatch rejection.
-- [ ] Integration test: RPC outage fail-closed behavior.
-- [ ] Concurrency test: daily boundary double-spend race (only one success).
+- [x] Unit tests for mandate matching and ambiguity rejection.
+- [x] Integration test: issue -> validate -> sign success path.
+- [x] Integration test: revoke -> immediate rejection path.
+- [x] Integration test: paused agent rejection path.
+- [x] Integration test: metadata hash mismatch rejection.
+- [x] Integration test: RPC outage fail-closed behavior.
+- [x] Concurrency test: daily boundary double-spend race (only one success).
 
 ### Phase 2 Exit Criteria
-- [ ] All validator/integration tests passing.
-- [ ] Demonstrated immediate revocation enforcement at signing boundary.
-- [ ] Concurrency tests prove no daily cap overspend.
+- [x] All validator/integration tests passing.
+- [x] Demonstrated immediate revocation enforcement at signing boundary.
+- [x] Concurrency tests prove no daily cap overspend.
 
 ---
 

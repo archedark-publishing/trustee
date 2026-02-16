@@ -196,6 +196,30 @@ class TestBudgetTracker:
         assert float(summary["total_spent"].replace("$", "")) <= 2.0
         assert any(not r for r in results)
 
+    def test_daily_boundary_allows_only_one_concurrent_spend(self, tmp_path):
+        tracker = BudgetTracker(tmp_path)
+        mandate = make_mandate(max_total_usd=10.0, max_per_tx_usd=1.0, daily_limit_usd=1.0)
+
+        def attempt(i: int) -> bool:
+            tx_id = f"daily-race-{i}"
+            reservation = tracker.authorize_and_reserve(
+                mandate_id=mandate.mandate_id,
+                tx_id=tx_id,
+                amount_usd=0.60,
+                merchant="merchant",
+                description="daily race",
+                max_total_usd=mandate.spending_limit.max_total_usd,
+                max_per_tx_usd=mandate.spending_limit.max_per_tx_usd,
+                daily_limit_usd=mandate.spending_limit.daily_limit_usd,
+                idempotency_key=f"daily-intent-{i}",
+            )
+            return reservation.allowed
+
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            outcomes = list(ex.map(attempt, [1, 2]))
+
+        assert sum(1 for ok in outcomes if ok) == 1
+
     def test_budget_tamper_detected(self, tmp_path):
         tracker = BudgetTracker(tmp_path)
         mandate = make_mandate(max_total_usd=2.0, max_per_tx_usd=1.0)
