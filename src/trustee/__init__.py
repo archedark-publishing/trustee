@@ -7,13 +7,27 @@ Human sets bounds → Agent operates within them → Full audit trail.
 
 __version__ = "0.1.0"
 
-from .mandate import Mandate, SpendingLimit, create_mandate, verify_mandate
+from .mandate import (
+    AP2Mandate,
+    AP2MandateStatus,
+    Mandate,
+    SpendingLimit,
+    canonicalize_ap2_payload,
+    compute_ap2_payload_hash,
+    create_ap2_mandate,
+    create_mandate,
+    verify_ap2_mandate,
+    verify_mandate,
+)
+from .mandate_store import MandateStore
 from .budget import BudgetTracker, BudgetState, Transaction
 from .payment import PaymentExecutor, PaymentRequest, PaymentResult
 from .audit import AuditTrail, EventType
 
 __all__ = [
     "Mandate", "SpendingLimit", "create_mandate", "verify_mandate",
+    "AP2Mandate", "AP2MandateStatus", "create_ap2_mandate", "verify_ap2_mandate",
+    "canonicalize_ap2_payload", "compute_ap2_payload_hash", "MandateStore",
     "BudgetTracker", "BudgetState", "Transaction",
     "PaymentExecutor", "PaymentRequest", "PaymentResult",
     "AuditTrail", "EventType",

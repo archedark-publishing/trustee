@@ -16,26 +16,26 @@
 ## Phase 0: Contract and Trust Model
 
 ### 0.1 Scaffold and Contract Design
-- [ ] Create `contracts/` workspace (Foundry or existing Solidity tooling) and document commands in `README`.
-- [ ] Implement `contracts/MandateRegistry.sol` with:
-- [ ] `trustedIssuerForAgent` mapping
-- [ ] `agentPaused` mapping
-- [ ] `MandateRecord` storage (`mandateHash`, `payloadHash`, `issuer`, `agent`, `issuedAt`, `expiresAt`, `revokedAt`, `metadataURI`)
-- [ ] `setTrustedIssuer` access control
-- [ ] `setAgentPaused` access control
-- [ ] `issueMandateOnChain` authorization + duplicate protection
-- [ ] `revokeMandate` issuer-only authorization
-- [ ] `getMandateStatus` status view
-- [ ] `getMandatesByAgentPaged` pagination
-- [ ] Emit all required events (`TrustedIssuerUpdated`, `AgentPauseUpdated`, `MandateIssued`, `MandateRevoked`).
+- [x] Create `contracts/` workspace (Foundry or existing Solidity tooling) and document commands in `README`.
+- [x] Implement `contracts/MandateRegistry.sol` with:
+- [x] `trustedIssuerForAgent` mapping
+- [x] `agentPaused` mapping
+- [x] `MandateRecord` storage (`mandateHash`, `payloadHash`, `issuer`, `agent`, `issuedAt`, `expiresAt`, `revokedAt`, `metadataURI`)
+- [x] `setTrustedIssuer` access control
+- [x] `setAgentPaused` access control
+- [x] `issueMandateOnChain` authorization + duplicate protection
+- [x] `revokeMandate` issuer-only authorization
+- [x] `getMandateStatus` status view
+- [x] `getMandatesByAgentPaged` pagination
+- [x] Emit all required events (`TrustedIssuerUpdated`, `AgentPauseUpdated`, `MandateIssued`, `MandateRevoked`).
 
 ### 0.2 Contract Tests
-- [ ] Add tests for trusted issuer gating.
-- [ ] Add tests for paused agent behavior.
-- [ ] Add tests for revoke authorization.
-- [ ] Add tests for expiry semantics.
-- [ ] Add tests for duplicate issuance rejection.
-- [ ] Add tests for pagination behavior.
+- [x] Add tests for trusted issuer gating.
+- [x] Add tests for paused agent behavior.
+- [x] Add tests for revoke authorization.
+- [x] Add tests for expiry semantics.
+- [x] Add tests for duplicate issuance rejection.
+- [x] Add tests for pagination behavior.
 
 ### 0.3 Deployment
 - [ ] Deploy to Base Sepolia first.
@@ -54,37 +54,37 @@
 ## Phase 1: Canonical Payload and Local Store
 
 ### 1.1 Canonical Payload Utilities
-- [ ] Extend `src/trustee/mandate.py` with canonical serialization/hashing helpers.
-- [ ] Implement deterministic canonical JSON function.
-- [ ] Normalize addresses (lowercase + `0x`).
-- [ ] Normalize and sort unique recipient allowlist.
-- [ ] Enforce integer base units for amounts.
-- [ ] Enforce CAIP-style asset identifier support.
+- [x] Extend `src/trustee/mandate.py` with canonical serialization/hashing helpers.
+- [x] Implement deterministic canonical JSON function.
+- [x] Normalize addresses (lowercase + `0x`).
+- [x] Normalize and sort unique recipient allowlist.
+- [x] Enforce integer base units for amounts.
+- [x] Enforce CAIP-style asset identifier support.
 
 ### 1.2 Mandate Store
-- [ ] Add `src/trustee/mandate_store.py` with required APIs:
-- [ ] `save_mandate`
-- [ ] `get_mandate`
-- [ ] `list_mandates`
-- [ ] `update_status`
-- [ ] `record_chain_confirmation`
-- [ ] `cleanup_expired`
-- [ ] Implement lifecycle statuses: `draft`, `pending_on_chain`, `active`, `revoked`, `expired`, `failed`.
-- [ ] Enforce `pending_on_chain -> active` only after confirmed chain tx.
-- [ ] Add atomic write strategy (temp-file + rename or sqlite).
-- [ ] Add concurrent access protection.
-- [ ] Add payload hash integrity check on load.
+- [x] Add `src/trustee/mandate_store.py` with required APIs:
+- [x] `save_mandate`
+- [x] `get_mandate`
+- [x] `list_mandates`
+- [x] `update_status`
+- [x] `record_chain_confirmation`
+- [x] `cleanup_expired`
+- [x] Implement lifecycle statuses: `draft`, `pending_on_chain`, `active`, `revoked`, `expired`, `failed`.
+- [x] Enforce `pending_on_chain -> active` only after confirmed chain tx.
+- [x] Add atomic write strategy (temp-file + rename or sqlite).
+- [x] Add concurrent access protection.
+- [x] Add payload hash integrity check on load.
 
 ### 1.3 Tests
-- [ ] Add unit tests for canonical hash determinism.
-- [ ] Add unit tests for lifecycle transitions.
-- [ ] Add concurrent read/write tests.
-- [ ] Add tests for integrity mismatch failure behavior.
+- [x] Add unit tests for canonical hash determinism.
+- [x] Add unit tests for lifecycle transitions.
+- [x] Add concurrent read/write tests.
+- [x] Add tests for integrity mismatch failure behavior.
 
 ### Phase 1 Exit Criteria
-- [ ] Deterministic payload hash tests passing.
-- [ ] Concurrency tests passing.
-- [ ] Lifecycle transition constraints enforced.
+- [x] Deterministic payload hash tests passing.
+- [x] Concurrency tests passing.
+- [x] Lifecycle transition constraints enforced.
 
 ---
 
@@ -215,4 +215,3 @@
 - [ ] Key rotation rehearsal completed.
 - [ ] Alerting/notification path validated.
 - [ ] Incident response contacts and runbooks confirmed.
-
