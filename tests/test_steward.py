@@ -79,7 +79,12 @@ class TestStewardCore:
 class TestSigningPolicyEnforcement:
     def test_sign_requires_prepared_intent(self):
         steward = Steward()
-        sid, acct = _make_session(steward, max_spend_usd=1.0, max_per_tx_usd=1.0)
+        sid, acct = _make_session(
+            steward,
+            max_spend_usd=1.0,
+            max_per_tx_usd=1.0,
+            allowed_networks=["eip155:84532"],
+        )
         signer = steward.get_signer(sid)
         recipient = Account.create().address
         domain, types, primary_type, message = _typed_data(

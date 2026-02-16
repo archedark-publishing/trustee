@@ -10,7 +10,7 @@ from trustee.x402_client import X402PaymentClient, X402Config, Network, X402Paym
 class TestX402Config:
     def test_defaults(self):
         config = X402Config()
-        assert config.network == Network.BASE_SEPOLIA
+        assert config.network == Network.BASE_MAINNET
         assert config.max_amount_usd == 10.0
 
     def test_mainnet(self):
@@ -29,7 +29,7 @@ class TestX402PaymentClient:
 
     @pytest.fixture
     def client(self, agent_key):
-        config = X402Config(network=Network.BASE_SEPOLIA)
+        config = X402Config(network=Network.BASE_MAINNET)
         c = X402PaymentClient(account=agent_key, config=config)
         yield c
         c.close()

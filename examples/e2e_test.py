@@ -1,5 +1,5 @@
 """
-End-to-end test: real x402 payment on Base Sepolia.
+End-to-end test: real x402 payment on Base mainnet.
 """
 
 import json
@@ -31,7 +31,7 @@ def run_server():
 
 
 def main():
-    print("🚀 Trustee E2E Test — Real x402 Payment on Base Sepolia")
+    print("🚀 Trustee E2E Test — Real x402 Payment on Base Mainnet")
     print("=" * 55)
     print()
 
@@ -65,7 +65,7 @@ def main():
 
     # 4. Create client and pay
     print("4️⃣  Making real x402 payment...")
-    config = X402Config(network=Network.BASE_SEPOLIA, max_amount_usd=1.0)
+    config = X402Config(network=Network.BASE_MAINNET, max_amount_usd=1.0)
     client = X402PaymentClient(account=acct, config=config)
 
     result = client.pay(url="http://127.0.0.1:8402/data", method="GET")

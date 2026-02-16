@@ -20,7 +20,7 @@ from eth_account.messages import encode_typed_data
 from .money import limit_usd_to_micros
 
 
-DEFAULT_NETWORK = "eip155:84532"
+DEFAULT_NETWORK = "eip155:8453"
 
 
 class MandateStatus(str, Enum):

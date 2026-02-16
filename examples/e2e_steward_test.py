@@ -1,5 +1,5 @@
 """
-End-to-end test: Steward-secured x402 payment on Base Sepolia.
+End-to-end test: Steward-secured x402 payment on Base mainnet.
 
 This is the PRODUCTION flow:
 1. Steward creates a time-limited session (loads key from 1Password)
@@ -48,7 +48,7 @@ def main():
             max_spend_usd=1.0,       # Session can spend up to $1
             max_per_tx_usd=0.01,     # Max $0.01 per transaction
             ttl_seconds=300,          # 5 minute session
-            allowed_networks=["eip155:84532"],
+            allowed_networks=["eip155:8453"],
         ),
     )
     print(f"   ✅ Session: {session.session_id}")
@@ -62,7 +62,7 @@ def main():
     client = X402PaymentClient.from_steward_session(
         steward=steward,
         session_id=session.session_id,
-        config=X402Config(network=Network.BASE_SEPOLIA),
+        config=X402Config(network=Network.BASE_MAINNET),
     )
     print(f"   ✅ Client ready (address: {client.address})")
     print(f"   Agent NEVER saw the private key!")

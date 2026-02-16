@@ -109,7 +109,7 @@ class Network(str, Enum):
 
 @dataclass
 class X402Config:
-    network: Network = Network.BASE_SEPOLIA
+    network: Network = Network.BASE_MAINNET
     timeout_seconds: float = 30.0
     max_amount_usd: float = 10.0
 

@@ -120,7 +120,7 @@ session = steward.create_session(
 client = X402PaymentClient.from_steward_session(
     steward=steward,
     session_id=session.session_id,
-    config=X402Config(network=Network.BASE_SEPOLIA),
+    config=X402Config(network=Network.BASE_MAINNET),
 )
 
 # Make a real payment
@@ -140,21 +140,21 @@ from trustee.x402_client import X402PaymentClient, X402Config, Network
 # Direct key access (for testing)
 client = X402PaymentClient.from_private_key(
     private_key="0x...",
-    config=X402Config(network=Network.BASE_SEPOLIA),
+    config=X402Config(network=Network.BASE_MAINNET),
 )
 
 # Hit any x402-protected endpoint
 result = client.pay(url="https://api.example.com/data")
 # result.success → True
 # result.tx_hash → "0x..." (on-chain proof)
-# result.network → "eip155:84532"
+# result.network → "eip155:8453"
 ```
 
 Supports:
-- **Base Sepolia** (testnet): `eip155:84532`
 - **Base Mainnet** (production): `eip155:8453`
+- **Base Sepolia** (testnet): `eip155:84532`
 - **USDC** stablecoin via EIP-3009 TransferWithAuthorization
-- Coinbase public facilitator at `x402.org/facilitator`
+- CDP facilitator at `https://api.cdp.coinbase.com/platform/v2/x402` (CDP API key auth required for verify/settle)
 
 ## Security Model
 
@@ -224,7 +224,7 @@ Key handling order of preference:
 ## Roadmap
 
 - [x] **Phase 0**: Core mandate + budget + audit trail
-- [x] **Phase 1**: Real x402 payments via Coinbase facilitator (Base Sepolia)
+- [x] **Phase 1**: Real x402 payments via Coinbase facilitator
 - [x] **Phase 2**: Steward secure key management (1Password + session keys)
 - [ ] **Phase 3**: Mainnet deployment (Stripe crypto approved, ready to switch)
 - [ ] **Phase 4**: AP2 mandate protocol integration

@@ -97,7 +97,7 @@ def main():
 @click.option("--duration", type=float, default=24.0,
               help="Mandate duration in hours (default: 24)")
 @click.option("--network", type=str, default=DEFAULT_NETWORK,
-              help="Mandate network in CAIP-2 format (default: eip155:84532)")
+              help="Mandate network in CAIP-2 format (default: eip155:8453)")
 @click.option("--description", default="General spending authorization",
               help="Human-readable description")
 def create(

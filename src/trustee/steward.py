@@ -33,7 +33,7 @@ class SessionConfig:
     max_spend_usd: float = 10.0
     max_per_tx_usd: float = 1.0
     ttl_seconds: int = 3600
-    allowed_networks: list[str] = field(default_factory=lambda: ["eip155:84532"])
+    allowed_networks: list[str] = field(default_factory=lambda: ["eip155:8453"])
     allowed_merchants: list[str] = field(default_factory=list)
     allowed_payees: list[str] = field(default_factory=list)
 
