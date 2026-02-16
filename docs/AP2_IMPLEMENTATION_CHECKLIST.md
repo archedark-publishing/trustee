@@ -130,40 +130,40 @@
 ## Phase 3: CLI and Ops Controls
 
 ### 3.1 CLI Commands
-- [ ] Extend `src/trustee/cli.py` with `trustee mandate` group.
-- [ ] Implement `mandate issue`.
-- [ ] Implement `mandate revoke`.
-- [ ] Implement `mandate list`.
-- [ ] Implement `mandate status`.
-- [ ] Implement `mandate trust-issuer`.
-- [ ] Implement `mandate pause-agent`.
-- [ ] Implement `mandate check-expiry`.
+- [x] Extend `src/trustee/cli.py` with `trustee mandate` group.
+- [x] Implement `mandate issue`.
+- [x] Implement `mandate revoke`.
+- [x] Implement `mandate list`.
+- [x] Implement `mandate status`.
+- [x] Implement `mandate trust-issuer`.
+- [x] Implement `mandate pause-agent`.
+- [x] Implement `mandate check-expiry`.
 
 ### 3.2 CLI Behavior Quality
-- [ ] `issue` reports pending + confirmed chain status.
-- [ ] `issue` does not claim success before confirmation.
-- [ ] `list` and `status` reconcile with on-chain state.
-- [ ] Add clear operator-facing error messages for fail-closed cases.
+- [x] `issue` reports pending + confirmed chain status.
+- [x] `issue` does not claim success before confirmation.
+- [x] `list` and `status` reconcile with on-chain state.
+- [x] Add clear operator-facing error messages for fail-closed cases.
 
 ### 3.3 Template Presets
-- [ ] Add local templates (`micro`, `daily_ops`, `vendor_locked`).
-- [ ] Compile templates into explicit mandate fields before signing.
-- [ ] Document template behavior and boundaries.
+- [x] Add local templates (`micro`, `daily_ops`, `vendor_locked`).
+- [x] Compile templates into explicit mandate fields before signing.
+- [x] Document template behavior and boundaries.
 
 ### 3.4 Notification Hook
-- [ ] Add expiry warning command (`--within` duration parsing).
-- [ ] Add optional webhook output mode.
-- [ ] Add tests for threshold calculations and output behavior.
+- [x] Add expiry warning command (`--within` duration parsing).
+- [x] Add optional webhook output mode.
+- [x] Add tests for threshold calculations and output behavior.
 
 ### 3.5 Ops Runbooks
-- [ ] Document key rotation runbook.
-- [ ] Document emergency kill switch runbook.
-- [ ] Document outage/fail-closed runbook.
-- [ ] Document any manual break-glass procedure with audit requirements.
+- [x] Document key rotation runbook.
+- [x] Document emergency kill switch runbook.
+- [x] Document outage/fail-closed runbook.
+- [x] Document any manual break-glass procedure with audit requirements.
 
 ### Phase 3 Exit Criteria
-- [ ] End-to-end CLI flow works: trust issuer -> issue -> sign pay -> revoke -> reject.
-- [ ] Runbooks complete and reviewed.
+- [x] End-to-end CLI flow works: trust issuer -> issue -> sign pay -> revoke -> reject.
+- [x] Runbooks complete and reviewed.
 
 ---
 

@@ -110,6 +110,9 @@ class MandateStore:
 
     def update_status(self, mandate_hash: str, status: str, reason: str | None = None) -> None:
         """Update local lifecycle status and optional failure reason."""
+        allowed_statuses = {member.value for member in AP2MandateStatus}
+        if status not in allowed_statuses:
+            raise ValueError(f"Invalid mandate status: {status}")
         with self._lock():
             path = self._mandate_path(mandate_hash)
             if not path.exists():
