@@ -1,17 +1,17 @@
-"""Tests for Bagman secure signing controls."""
+"""Tests for Steward secure signing controls."""
 
 import time
 
 import pytest
 from eth_account import Account
 
-from trustee.bagman import Bagman, SessionConfig
+from trustee.steward import Steward, SessionConfig
 from trustee.errors import SessionExpiredError, SessionNotFoundError
 
 
-def _make_session(bagman: Bagman, **config_kwargs):
+def _make_session(steward: Steward, **config_kwargs):
     acct = Account.create()
-    session = bagman.create_session_from_private_key(
+    session = steward.create_session_from_private_key(
         acct.key.hex(),
         config=SessionConfig(**config_kwargs),
     )
@@ -41,46 +41,46 @@ def _typed_data(amount_base_units: int, *, to: str, from_addr: str, chain_id: in
     return domain, types, "TransferWithAuthorization", message
 
 
-class TestBagmanCore:
+class TestStewardCore:
     def test_signer_does_not_expose_session_account_path(self):
-        bagman = Bagman()
-        sid, _ = _make_session(bagman)
-        signer = bagman.get_signer(sid)
+        steward = Steward()
+        sid, _ = _make_session(steward)
+        signer = steward.get_signer(sid)
         assert not hasattr(signer, "_session")
         with pytest.raises(AttributeError):
             _ = signer._session  # type: ignore[attr-defined]
 
     def test_session_lifecycle(self):
-        bagman = Bagman()
-        sid, acct = _make_session(bagman, max_spend_usd=10.0)
-        assert bagman.get_session(sid).wallet_address == acct.address
-        signer = bagman.get_signer(sid)
+        steward = Steward()
+        sid, acct = _make_session(steward, max_spend_usd=10.0)
+        assert steward.get_session(sid).wallet_address == acct.address
+        signer = steward.get_signer(sid)
         assert signer.address == acct.address
-        bagman.destroy_session(sid)
+        steward.destroy_session(sid)
         with pytest.raises(SessionNotFoundError):
-            bagman.get_session(sid)
+            steward.get_session(sid)
 
     def test_expired_session_raises(self):
-        bagman = Bagman()
-        sid, acct = _make_session(bagman)
-        bagman._sessions[sid].created_at = time.time() - 7200
+        steward = Steward()
+        sid, acct = _make_session(steward)
+        steward._sessions[sid].created_at = time.time() - 7200
         with pytest.raises(SessionExpiredError):
-            bagman.get_session(sid)
+            steward.get_session(sid)
 
     def test_destroy_all(self):
-        bagman = Bagman()
+        steward = Steward()
         for _ in range(3):
-            _make_session(bagman)
-        assert len(bagman.list_sessions()) == 3
-        bagman.destroy_all()
-        assert len(bagman.list_sessions()) == 0
+            _make_session(steward)
+        assert len(steward.list_sessions()) == 3
+        steward.destroy_all()
+        assert len(steward.list_sessions()) == 0
 
 
 class TestSigningPolicyEnforcement:
     def test_sign_requires_prepared_intent(self):
-        bagman = Bagman()
-        sid, acct = _make_session(bagman, max_spend_usd=1.0, max_per_tx_usd=1.0)
-        signer = bagman.get_signer(sid)
+        steward = Steward()
+        sid, acct = _make_session(steward, max_spend_usd=1.0, max_per_tx_usd=1.0)
+        signer = steward.get_signer(sid)
         recipient = Account.create().address
         domain, types, primary_type, message = _typed_data(
             500,
@@ -91,9 +91,9 @@ class TestSigningPolicyEnforcement:
             signer.sign_typed_data(domain, types, primary_type, message)
 
     def test_sign_path_enforces_spend_caps_without_precheck(self):
-        bagman = Bagman()
-        sid, acct = _make_session(bagman, max_spend_usd=0.002, max_per_tx_usd=0.001)
-        signer = bagman.get_signer(sid)
+        steward = Steward()
+        sid, acct = _make_session(steward, max_spend_usd=0.002, max_per_tx_usd=0.001)
+        signer = steward.get_signer(sid)
         recipient = Account.create().address
         signer.prepare_payment(network="eip155:84532", pay_to=recipient, amount_base_units=2_000)
         domain, types, primary_type, message = _typed_data(
@@ -105,9 +105,9 @@ class TestSigningPolicyEnforcement:
             signer.sign_typed_data(domain, types, primary_type, message)
 
     def test_sign_path_enforces_allowed_networks(self):
-        bagman = Bagman()
-        sid, acct = _make_session(bagman, allowed_networks=["eip155:84532"])
-        signer = bagman.get_signer(sid)
+        steward = Steward()
+        sid, acct = _make_session(steward, allowed_networks=["eip155:84532"])
+        signer = steward.get_signer(sid)
         recipient = Account.create().address
         signer.prepare_payment(network="eip155:84532", pay_to=recipient, amount_base_units=500)
         domain, types, primary_type, message = _typed_data(
@@ -120,14 +120,14 @@ class TestSigningPolicyEnforcement:
             signer.sign_typed_data(domain, types, primary_type, message)
 
     def test_sign_path_enforces_allowed_payees(self):
-        bagman = Bagman()
+        steward = Steward()
         approved = Account.create().address
         sid, acct = _make_session(
-            bagman,
+            steward,
             allowed_networks=["eip155:84532"],
             allowed_payees=[approved],
         )
-        signer = bagman.get_signer(sid)
+        signer = steward.get_signer(sid)
         recipient = Account.create().address
         signer.prepare_payment(network="eip155:84532", pay_to=recipient, amount_base_units=500)
         domain, types, primary_type, message = _typed_data(
@@ -139,13 +139,13 @@ class TestSigningPolicyEnforcement:
             signer.sign_typed_data(domain, types, primary_type, message)
 
     def test_prepared_payment_mismatch_is_rejected(self):
-        bagman = Bagman()
+        steward = Steward()
         approved = Account.create().address
         sid, acct = _make_session(
-            bagman,
+            steward,
             allowed_networks=["eip155:84532"],
         )
-        signer = bagman.get_signer(sid)
+        signer = steward.get_signer(sid)
         signer.prepare_payment(network="eip155:84532", pay_to=approved, amount_base_units=100)
         domain, types, primary_type, message = _typed_data(
             100,
@@ -156,9 +156,9 @@ class TestSigningPolicyEnforcement:
             signer.sign_typed_data(domain, types, primary_type, message)
 
     def test_check_and_record_spend_updates_remaining(self):
-        bagman = Bagman()
-        sid, _ = _make_session(bagman, max_spend_usd=1.0)
-        signer = bagman.get_signer(sid)
+        steward = Steward()
+        sid, _ = _make_session(steward, max_spend_usd=1.0)
+        signer = steward.get_signer(sid)
         ok, _ = signer.check_and_record_spend(0.25)
         assert ok
         assert signer.remaining_usd < 1.0

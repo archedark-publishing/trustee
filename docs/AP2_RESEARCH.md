@@ -194,7 +194,7 @@ CartContents(
 - ❌ Budget tracking state (mandates are stateless - no "spent $X of $Y")
 - ❌ Revocation mechanism (how to cancel a mandate)
 - ❌ Spending enforcement (mandate says "allowed", not "how much left")
-- ❌ Session key integration (bagman provides keys, AP2 uses them)
+- ❌ Session key integration (steward provides keys, AP2 uses them)
 
 ---
 
@@ -239,7 +239,7 @@ export GOOGLE_CLOUD_LOCATION='global'
 1. **JWT Signing Implementation**
    - What crypto library? (PyJWT? python-jose?)
    - Key format? (RSA? ECDSA? EdDSA?)
-   - Key storage? (1Password via bagman)
+   - Key storage? (1Password via steward)
    - Example: How does merchant sign CartMandate JWT?
 
 2. **Verifiable Credential Signing**
@@ -364,19 +364,19 @@ Different parties see different information:
 
 ---
 
-## Comparison: bagman vs. AP2
+## Comparison: steward vs. AP2
 
-| Aspect | bagman | AP2 |
+| Aspect | steward | AP2 |
 |--------|--------|-----|
 | **Purpose** | Secret storage + leak prevention | Payment authorization + audit trail |
 | **Layer** | Security infrastructure | Authorization protocol |
 | **Provides** | Session keys, output sanitization, input validation | Mandate structures, signing patterns |
 | **Does NOT provide** | Authorization proofs | Secret management |
 | **Use in Trustee** | Phase 0 - security foundation | Phase 1 - authorization layer |
-| **Integration** | Store AP2 signing keys via bagman | Sign AP2 mandates with bagman-protected keys |
+| **Integration** | Store AP2 signing keys via steward | Sign AP2 mandates with steward-protected keys |
 
 **They're complementary:**
-- bagman protects the keys
+- steward protects the keys
 - AP2 uses the keys to create signed mandates
 - Together: secure authorization with leak-proof key management
 

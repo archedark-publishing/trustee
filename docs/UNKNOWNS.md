@@ -11,12 +11,12 @@ Questions that need answers before implementation.
 ### Core Payment System (2026-02-10)
 - ✅ **x402 payments:** Working end-to-end on Base Sepolia. Official x402 SDK v2.0.0, EIP-712/EIP-3009 signing via EthAccountSigner adapter
 - ✅ **Signing implementation:** `eth_account.Account` + custom `EthAccountSigner` adapter for x402 `ClientEvmSigner` protocol
-- ✅ **Key management:** Bagman session-based access. Key in 1Password, loaded into time-limited sessions, agent only gets `BagmanSigner`
+- ✅ **Key management:** Steward session-based access. Key in 1Password, loaded into time-limited sessions, agent only gets `StewardSigner`
 - ✅ **Budget tracking:** File-based with atomic writes and file locking. Per-tx, daily, total limits.
 - ✅ **Audit trail:** Append-only JSONL. Every operation logged.
 - ✅ **Mandate system:** EIP-712 signed spending authorizations with verification.
 - ✅ **Stripe crypto:** Approved and enabled. Ready for mainnet switch.
-- ✅ **Architecture:** AP2 (our code) → Bagman (our code) → x402 SDK → Coinbase facilitator → Base blockchain
+- ✅ **Architecture:** AP2 (our code) → Steward (our code) → x402 SDK → Coinbase facilitator → Base blockchain
 
 ### Technical Details Resolved
 - ✅ **eth-account compatibility:** v0.13.x uses `full_message=` kwarg for `sign_typed_data`, not positional args. x402 SDK expects `ClientEvmSigner` protocol. Bridge: `EthAccountSigner` adapter.
@@ -25,7 +25,7 @@ Questions that need answers before implementation.
 - ✅ **Facilitator URL:** `https://x402.org/facilitator` for both testnet and mainnet.
 - ✅ **Network IDs:** Base Sepolia = `eip155:84532`, Base Mainnet = `eip155:8453`
 - ✅ **USDC contracts:** Base Sepolia = `0x036CbD53842c5426634e7929541eC2318f3dCF7e`
-- ✅ **Bagman session model:** In-memory sessions with configurable TTL, spend caps, auto-expiry. Key wiped on destroy.
+- ✅ **Steward session model:** In-memory sessions with configurable TTL, spend caps, auto-expiry. Key wiped on destroy.
 
 ---
 
@@ -65,10 +65,10 @@ Questions that need answers before implementation.
 
 ### ✅ Completed
 1. Payment infrastructure survey (ACP, AP2, x402, Stripe)
-2. Bagman security architecture
+2. Steward security architecture
 3. AP2 mandate structures
 4. x402 signing + Stripe integration
-5. **MVP implementation** (mandate + budget + audit + x402 + bagman)
+5. **MVP implementation** (mandate + budget + audit + x402 + steward)
 6. **E2E testnet payment** (real USDC on Base Sepolia)
 
 ### Next

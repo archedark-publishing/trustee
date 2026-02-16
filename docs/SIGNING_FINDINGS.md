@@ -158,7 +158,7 @@ uv pip install eth_account
 ```python
 from eth_account import Account
 account = Account.create()
-# Store private_key in 1Password via bagman
+# Store private_key in 1Password via steward
 ```
 
 **Sign Test Payment:**
@@ -183,7 +183,7 @@ payload = await process_payment(requirements, account)
 **Research Needed:**
 1. Find JWT signing in AP2 samples
 2. Determine key format (RSA vs ECDSA)
-3. Generate/store signing key via bagman
+3. Generate/store signing key via steward
 4. Implement cart hash function
 
 ### Phase 2: Payment Mandate (Optional for MVP)
@@ -196,7 +196,7 @@ payload = await process_payment(requirements, account)
 
 ## Security Considerations
 
-### Key Storage via bagman
+### Key Storage via steward
 
 **Payment Signing Key (Ethereum):**
 ```bash
@@ -218,9 +218,9 @@ op item create \
   --field "private_key=-----BEGIN PRIVATE KEY-----..."
 ```
 
-**Access via bagman:**
+**Access via steward:**
 ```python
-from bagman import get_secret
+from steward import get_secret
 
 # Retrieve at runtime (never persisted)
 payment_key = get_secret("trustee-payment-key", "private_key")
@@ -232,7 +232,7 @@ account = Account.from_key(payment_key)
 **Critical:** All private keys must be sanitized before ANY output:
 
 ```python
-from bagman.sanitizer import OutputSanitizer
+from steward.sanitizer import OutputSanitizer
 
 def respond(content: str) -> str:
     return OutputSanitizer.sanitize(content)

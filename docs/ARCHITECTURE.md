@@ -31,7 +31,7 @@ Current AI agent payment models require either:
                      │ (cryptographically signed)
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                        bagman Layer                         │
+│                        steward Layer                         │
 │  - Verifies mandate is valid                                │
 │  - Provisions session key (NOT root wallet key)             │
 │  - Enforces spend limits                                    │
@@ -113,20 +113,20 @@ Current AI agent payment models require either:
 **Unknowns:**
 - [ ] Exact mandate format (JSON? Custom structure?)
 - [ ] Signing mechanism (what crypto primitives? ECDSA? EdDSA?)
-- [ ] Verification process (who verifies? bagman? payment processor?)
+- [ ] Verification process (who verifies? steward? payment processor?)
 - [ ] Revocation mechanism (on-chain? off-chain registry? CRL?)
 - [ ] Reference implementations available?
 
 ---
 
-### 2. bagman Security Layer
+### 2. steward Security Layer
 **What it does:** Session key provisioning + secret isolation + output sanitization
 
 **Session Key Lifecycle (conceptual):**
 1. Agent requests session key for payment
-2. bagman verifies Intent Mandate is valid
-3. bagman checks spend limits haven't been exceeded
-4. bagman provisions ephemeral session key (NOT root wallet key)
+2. steward verifies Intent Mandate is valid
+3. steward checks spend limits haven't been exceeded
+4. steward provisions ephemeral session key (NOT root wallet key)
 5. Session key has time limit (e.g., 1 hour) and spend limit (e.g., $10)
 6. Agent uses session key for x402 payment
 7. Session key expires automatically
@@ -138,7 +138,7 @@ Current AI agent payment models require either:
 - Session keys auto-expire (time + spend limits)
 
 **Unknowns:**
-- [ ] bagman API for requesting session key
+- [ ] steward API for requesting session key
 - [ ] How are spend limits enforced? (client checks? server validation? blockchain?)
 - [ ] Session key format (standard? custom?)
 - [ ] Key rotation mechanism
@@ -155,8 +155,8 @@ Current AI agent payment models require either:
 1. Agent makes HTTP request: `GET /api/service`
 2. Server responds: `402 Payment Required` with payment details
 3. Agent parses payment info (amount, token, recipient)
-4. Agent requests session key from bagman
-5. bagman returns session key (if authorized)
+4. Agent requests session key from steward
+5. steward returns session key (if authorized)
 6. Agent signs payment with session key
 7. Agent re-sends request with `X-PAYMENT` header
 8. Server verifies payment, broadcasts on-chain
@@ -165,7 +165,7 @@ Current AI agent payment models require either:
 **Unknowns:**
 - [ ] How to attach AP2 mandate to x402 payment? (custom header? payload extension?)
 - [ ] Does Stripe Machine Payments support mandate verification natively?
-- [ ] Integration between bagman session keys and x402 signature format
+- [ ] Integration between steward session keys and x402 signature format
 - [ ] Error handling for failed payments
 
 ---
@@ -199,7 +199,7 @@ Current AI agent payment models require either:
    - Allowed categories: infrastructure, tools
    - Valid for: Feb 2026
 3. Josh signs mandate with his key
-4. Mandate is stored (where? bagman? blockchain? both?)
+4. Mandate is stored (where? steward? blockchain? both?)
 5. Ada receives notification: "You now have $100 budget for February"
 
 **Unknowns:**
@@ -214,28 +214,28 @@ Current AI agent payment models require either:
 1. Ada needs to pay $0.50 for API call
 2. Ada checks: Is this within my budget? (Intent Mandate rules)
 3. Ada creates Cart Mandate (specific items + amount)
-4. Ada requests session key from bagman:
+4. Ada requests session key from steward:
    ```
-   bagman.requestKey({
+   steward.requestKey({
      mandate: intentMandateId,
      cart: cartMandate,
      amount: 0.50
    })
    ```
-5. bagman verifies:
+5. steward verifies:
    - Intent Mandate is valid
    - Amount within limits
    - Categories allowed
    - Not over budget
-6. bagman returns session key (or rejects if over limit)
+6. steward returns session key (or rejects if over limit)
 7. Ada makes x402 payment using session key
 8. Payment settles on-chain
 9. Ada logs transaction locally
 10. Budget decremented ($99.50 remaining)
 
 **Unknowns:**
-- [ ] bagman API syntax (actual function signatures?)
-- [ ] Where is budget state tracked? (bagman? blockchain? both?)
+- [ ] steward API syntax (actual function signatures?)
+- [ ] Where is budget state tracked? (steward? blockchain? both?)
 - [ ] Real-time vs. eventual consistency for budget checks
 - [ ] Concurrent transaction handling
 
@@ -257,7 +257,7 @@ Current AI agent payment models require either:
 
 **Unknowns:**
 - [ ] Dashboard implementation (existing? custom?)
-- [ ] Where is transaction data pulled from? (blockchain? bagman logs? both?)
+- [ ] Where is transaction data pulled from? (blockchain? steward logs? both?)
 - [ ] Real-time updates or polling?
 
 ---
@@ -268,7 +268,7 @@ Current AI agent payment models require either:
 2. Josh clicks "Revoke" in dashboard
 3. Revocation is cryptographically signed
 4. Revocation propagated to:
-   - bagman (stops issuing session keys)
+   - steward (stops issuing session keys)
    - Blockchain (optional: on-chain revocation record)
 5. Ada receives notification: "Your budget has been revoked"
 6. Any in-flight session keys expire immediately (or finish current transaction?)
@@ -288,14 +288,14 @@ Current AI agent payment models require either:
 
 **What we're protecting against:**
 1. **Compromised agent** - Even if Ada's entire system is compromised, attacker only gets session keys (limited time/spend)
-2. **Prompt injection** - Adversarial inputs trying to extract wallet keys (bagman output sanitization catches this)
-3. **Accidental leaks** - Agent accidentally logs/shares private key (bagman prevents key from ever reaching agent)
+2. **Prompt injection** - Adversarial inputs trying to extract wallet keys (steward output sanitization catches this)
+3. **Accidental leaks** - Agent accidentally logs/shares private key (steward prevents key from ever reaching agent)
 4. **Overspending** - Agent tries to spend beyond authorized bounds (cryptographically enforced limits)
 5. **Unauthorized transactions** - Someone impersonating agent (mandate signatures required)
 
 **What we're NOT protecting against (out of scope):**
 - Compromised human (if Josh's signing key is stolen, attacker can create malicious mandates)
-- Compromised bagman (if bagman itself is exploited, security model breaks)
+- Compromised steward (if steward itself is exploited, security model breaks)
 - Blockchain vulnerabilities (relying on Base/USDC security)
 
 ### Security Properties
@@ -313,7 +313,7 @@ Current AI agent payment models require either:
 
 ### Critical (blocking)
 - [ ] How do AP2 mandates actually work? (Read full spec on GitHub)
-- [ ] How does bagman provision session keys? (Read bagman docs/code)
+- [ ] How does steward provision session keys? (Read steward docs/code)
 - [ ] How do x402 + AP2 integrate? (Is there a standard? Or custom build?)
 - [ ] Does Stripe Machine Payments support AP2 natively?
 
@@ -335,16 +335,16 @@ Current AI agent payment models require either:
 ## Next Steps
 
 **Phase 1: Deep Research (1-2 sessions)**
-1. Read bagman documentation thoroughly
-2. Review bagman source code
+1. Read steward documentation thoroughly
+2. Review steward source code
 3. Read AP2 technical specification
 4. Check Stripe Machine Payments + AP2 integration status
 5. Document findings and update architecture
 
 **Phase 2: Proof of Concept (after research)**
-1. Install and test bagman locally
+1. Install and test steward locally
 2. Create simple AP2 mandate (manual, no UI yet)
-3. Request session key from bagman
+3. Request session key from steward
 4. Make test x402 payment (Josh pays Ada $0.01)
 5. Verify end-to-end flow works
 

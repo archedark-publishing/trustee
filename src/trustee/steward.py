@@ -1,5 +1,5 @@
 """
-Bagman — session-based signing controls for agent payments.
+Steward — session-based signing controls for agent payments.
 
 Private keys are held in a dedicated worker process. The caller only receives
 opaque signer capabilities that can request policy-checked signatures.
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SessionConfig:
-    """Configuration for a Bagman session."""
+    """Configuration for a Steward session."""
 
     max_spend_usd: float = 10.0
     max_per_tx_usd: float = 1.0
@@ -47,7 +47,7 @@ class _ExpectedPayment:
 
 @dataclass
 class SessionState:
-    """Runtime state of a Bagman session (no key material)."""
+    """Runtime state of a Steward session (no key material)."""
 
     session_id: str
     created_at: float
@@ -120,7 +120,7 @@ class SessionState:
         }
 
 
-class Bagman:
+class Steward:
     """Session manager for secure signing capabilities."""
 
     def __init__(self):
@@ -189,7 +189,7 @@ class Bagman:
         )
         self._sessions[session_id] = session
         logger.info(
-            "Bagman session created: %s (wallet: %s, ttl: %ds, cap: $%.2f)",
+            "Steward session created: %s (wallet: %s, ttl: %ds, cap: $%.2f)",
             session_id,
             wallet_address,
             config.ttl_seconds,
@@ -223,7 +223,7 @@ class Bagman:
         )
         self._sessions[session_id] = session
         logger.info(
-            "Bagman session created: %s (wallet: %s, ttl: %ds, cap: $%.2f)",
+            "Steward session created: %s (wallet: %s, ttl: %ds, cap: $%.2f)",
             session_id,
             wallet_address,
             config.ttl_seconds,
@@ -242,9 +242,9 @@ class Bagman:
             raise SessionExpiredError(f"Session expired: {session_id}")
         return session
 
-    def get_signer(self, session_id: str) -> "BagmanSigner":
+    def get_signer(self, session_id: str) -> "StewardSigner":
         session = self.get_session(session_id)
-        return BagmanSigner(self, session_id=session.session_id, address=session.wallet_address)
+        return StewardSigner(self, session_id=session.session_id, address=session.wallet_address)
 
     def destroy_session(self, session_id: str) -> None:
         self._sessions.pop(session_id, None)
@@ -252,7 +252,7 @@ class Bagman:
             self._rpc("destroy_session", session_id=session_id)
         except Exception:
             pass
-        logger.info("Bagman session destroyed: %s", session_id)
+        logger.info("Steward session destroyed: %s", session_id)
 
     def destroy_all(self) -> None:
         for sid in list(self._sessions.keys()):
@@ -266,16 +266,16 @@ class Bagman:
 
     def _generate_session_id(self) -> str:
         entropy = f"{time.time()}-{os.urandom(16).hex()}"
-        return f"bm-{hashlib.sha256(entropy.encode()).hexdigest()[:12]}"
+        return f"st-{hashlib.sha256(entropy.encode()).hexdigest()[:12]}"
 
     def _rpc(self, command: str, **payload) -> dict:
         if self._closed:
-            raise RuntimeError("Bagman is closed")
+            raise RuntimeError("Steward is closed")
         with self._rpc_lock:
             self._conn.send({"cmd": command, **payload})
             response = self._conn.recv()
         if not response.get("ok"):
-            raise RuntimeError(response.get("error", "Unknown bagman worker error"))
+            raise RuntimeError(response.get("error", "Unknown steward worker error"))
         return response.get("result", {})
 
     def _check_and_record_spend(self, session_id: str, amount_usd: float) -> tuple[bool, str]:
@@ -327,13 +327,13 @@ class Bagman:
         return bytes.fromhex(str(result["signature_hex"]))
 
 
-class BagmanSigner:
+class StewardSigner:
     """Capability object that exposes policy-enforced signing only."""
 
-    __slots__ = ("_bagman", "_session_id", "_address")
+    __slots__ = ("_steward", "_session_id", "_address")
 
-    def __init__(self, bagman: Bagman, session_id: str, address: str):
-        self._bagman = bagman
+    def __init__(self, steward: Steward, session_id: str, address: str):
+        self._steward = steward
         self._session_id = session_id
         self._address = address
 
@@ -343,17 +343,17 @@ class BagmanSigner:
 
     @property
     def remaining_usd(self) -> float:
-        return self._bagman.get_session(self._session_id).remaining_usd
+        return self._steward.get_session(self._session_id).remaining_usd
 
     @property
     def seconds_remaining(self) -> int:
-        return self._bagman.get_session(self._session_id).seconds_remaining
+        return self._steward.get_session(self._session_id).seconds_remaining
 
     def check_and_record_spend(self, amount_usd: float) -> tuple[bool, str]:
-        return self._bagman._check_and_record_spend(self._session_id, amount_usd)
+        return self._steward._check_and_record_spend(self._session_id, amount_usd)
 
     def prepare_payment(self, network: str, pay_to: str, amount_base_units: int) -> None:
-        self._bagman._prepare_expected_payment(
+        self._steward._prepare_expected_payment(
             self._session_id,
             network=network,
             pay_to=pay_to,
@@ -367,7 +367,7 @@ class BagmanSigner:
         primary_type: str,
         message: dict[str, Any],
     ) -> bytes:
-        return self._bagman._sign_typed_data(
+        return self._steward._sign_typed_data(
             self._session_id,
             domain=domain,
             types=types,
@@ -377,7 +377,7 @@ class BagmanSigner:
 
     def __repr__(self) -> str:
         return (
-            f"BagmanSigner(address={self.address}, "
+            f"StewardSigner(address={self.address}, "
             f"remaining=${self.remaining_usd:.2f}, ttl={self.seconds_remaining}s)"
         )
 

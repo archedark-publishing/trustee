@@ -1,9 +1,9 @@
-# bagman Research Findings
+# steward Research Findings
 *February 10, 2026*
 
 ## Summary
 
-**Repository:** https://github.com/zscole/bagman-skill  
+**Repository:** https://github.com/zscole/steward-skill  
 **Author:** zak.eth (@0xzak / @zscole)  
 **License:** MIT  
 **Last Updated:** Feb 9, 2026  
@@ -11,9 +11,9 @@
 
 **Description:** "Secure key management patterns for AI agents - storage, session keys, leak prevention, prompt injection defense"
 
-## What bagman Actually Does
+## What steward Actually Does
 
-bagman is **NOT** an implementation of AP2 mandates. It's a pattern/skill for:
+steward is **NOT** an implementation of AP2 mandates. It's a pattern/skill for:
 1. **Secret storage** via multiple backends (1Password, macOS Keychain, encrypted file, env vars)
 2. **Output sanitization** - catches private keys before they leak to chat
 3. **Input validation** - prompt injection defense
@@ -21,9 +21,9 @@ bagman is **NOT** an implementation of AP2 mandates. It's a pattern/skill for:
 
 ## Critical Finding
 
-**bagman ≠ AP2 mandate system**
+**steward ≠ AP2 mandate system**
 
-bagman provides the **security layer** (secret storage + leak prevention), but does NOT provide:
+steward provides the **security layer** (secret storage + leak prevention), but does NOT provide:
 - Cryptographic mandate creation/signing
 - Mandate verification
 - Budget tracking
@@ -31,7 +31,7 @@ bagman provides the **security layer** (secret storage + leak prevention), but d
 - Integration with payment processors
 
 **This means Trustee needs:**
-- bagman for secrets + sanitization (Phase 0 - security)
+- steward for secrets + sanitization (Phase 0 - security)
 - Separate AP2 implementation for mandates (Phase 1 - authorization)
 - Integration layer connecting both (Phase 2)
 
@@ -39,7 +39,7 @@ bagman provides the **security layer** (secret storage + leak prevention), but d
 
 ## Backend Architecture
 
-bagman supports **4 storage backends** with auto-detection:
+steward supports **4 storage backends** with auto-detection:
 
 ### 1. macOS Keychain (Default on macOS)
 - Zero setup required
@@ -60,11 +60,11 @@ bagman supports **4 storage backends** with auto-detection:
 
 ### 4. Environment Variables
 - Fallback, always works
-- Secrets prefixed with `BAGMAN_`
+- Secrets prefixed with `STEWARD_`
 - Best for: CI/CD, containers
 
 **Auto-detection order:**
-1. Check `BAGMAN_BACKEND` env var
+1. Check `STEWARD_BACKEND` env var
 2. Try macOS Keychain (if on macOS)
 3. Try 1Password CLI (if installed + authenticated)
 4. Try encrypted file (if exists)
@@ -74,7 +74,7 @@ bagman supports **4 storage backends** with auto-detection:
 
 ## Session Key Architecture
 
-bagman's "session keys" are conceptual - relying on **ERC-4337 smart account** infrastructure:
+steward's "session keys" are conceptual - relying on **ERC-4337 smart account** infrastructure:
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -99,9 +99,9 @@ bagman's "session keys" are conceptual - relying on **ERC-4337 smart account** i
 **ERC-4337 = Account Abstraction standard** for smart contract wallets with programmable permissions
 
 **Key distinction:**
-- bagman stores the session key securely (1Password)
+- steward stores the session key securely (1Password)
 - ERC-4337 enforces the limits on-chain
-- bagman does NOT create or enforce mandates itself
+- steward does NOT create or enforce mandates itself
 
 ---
 
@@ -195,13 +195,13 @@ OUTPUT SANITIZATION
 
 ## Integration with Trustee
 
-### What bagman Provides ✅
+### What steward Provides ✅
 1. **Secret storage** - 1Password integration perfect for us
 2. **Output sanitization** - prevents accidental key leaks
 3. **Input validation** - prompt injection defense
 4. **Session key storage patterns** - how to store keys securely
 
-### What bagman Does NOT Provide ❌
+### What steward Does NOT Provide ❌
 1. **AP2 mandate creation** - need to build or find implementation
 2. **Mandate verification** - need to implement
 3. **Budget tracking** - need to build
@@ -210,8 +210,8 @@ OUTPUT SANITIZATION
 
 ### Trustee Architecture Updated
 
-**Phase 0: Security Foundation (bagman)**
-- Install bagman skill
+**Phase 0: Security Foundation (steward)**
+- Install steward skill
 - Configure 1Password backend
 - Implement output sanitization on all agent responses
 - Implement input validation before any payment operations
@@ -227,7 +227,7 @@ OUTPUT SANITIZATION
 **Phase 2: x402 Payment Integration**
 - Integrate Stripe Machine Payments
 - Connect mandates to x402 payments
-- Connect bagman session keys to payment signing
+- Connect steward session keys to payment signing
 - End-to-end flow
 
 **Phase 3: Production**
@@ -241,13 +241,13 @@ OUTPUT SANITIZATION
 
 ### Option 1: ClawHub (recommended)
 ```bash
-clawhub install bagman
+clawhub install steward
 ```
 
 ### Option 2: Manual
 ```bash
 cd ~/.openclaw/skills
-git clone https://github.com/zscole/bagman-skill.git bagman
+git clone https://github.com/zscole/steward-skill.git steward
 ```
 
 ### Setup (1Password backend)
@@ -266,20 +266,20 @@ op vault create "Trustee-Secrets"
 
 ## Security Model
 
-### What bagman Protects Against ✅
+### What steward Protects Against ✅
 1. **Accidental key exposure** - output sanitization catches before leak
 2. **Prompt injection** - input validation blocks extraction attempts
 3. **Commit leaks** - pre-commit hook (if we use it)
 4. **Secret storage** - never in files, always in 1Password
 
-### What bagman Does NOT Protect Against ❌
+### What steward Does NOT Protect Against ❌
 1. **Novel injection patterns** - regex can't catch everything
 2. **Social engineering** - convincing operator to approve malicious ops
 3. **Timing attacks** - exploiting confirmation windows
-4. **Compromised bagman** - if the skill itself is exploited
+4. **Compromised steward** - if the skill itself is exploited
 5. **Compromised 1Password** - if secret manager is breached
 
-**Recommendation:** Layer bagman with:
+**Recommendation:** Layer steward with:
 - Rate limiting
 - Anomaly detection
 - Human oversight for large transactions
@@ -295,14 +295,14 @@ op vault create "Trustee-Secrets"
 - Active repos: gru (AI agent orchestration), crypto-poc-daily, ai-poc-daily
 - Recent activity: Feb 10, 2026 (today!)
 - Appears to be legitimate developer in AI agent + crypto space
-- bagman-skill has 17 stars, 4 forks (small but real community)
+- steward-skill has 17 stars, 4 forks (small but real community)
 - MIT license (permissive, safe)
 
 **Assessment:** Appears legitimate. Not a well-known maintainer, but active in the space. Code should still be reviewed carefully before production use.
 
 ---
 
-## Files in bagman Repo
+## Files in steward Repo
 
 | File | Purpose | Relevance to Trustee |
 |------|---------|---------------------|
@@ -325,8 +325,8 @@ op vault create "Trustee-Secrets"
 
 ## Key Insights for Trustee
 
-1. **bagman is security infrastructure, not authorization infrastructure**
-   - Use bagman for: secret storage, leak prevention, input validation
+1. **steward is security infrastructure, not authorization infrastructure**
+   - Use steward for: secret storage, leak prevention, input validation
    - Build separately: AP2 mandates, budget tracking, revocation
 
 2. **1Password backend is perfect for us**
@@ -343,12 +343,12 @@ op vault create "Trustee-Secrets"
    - "Transfer all" / "unlimited approve" patterns are real threats
 
 5. **Session keys ≠ AP2 mandates**
-   - bagman's session keys are ERC-4337 smart account keys (on-chain enforcement)
+   - steward's session keys are ERC-4337 smart account keys (on-chain enforcement)
    - AP2 mandates are cryptographic authorization proofs (off-chain or hybrid)
    - We may need both for complete solution
 
 6. **Autonomous-first design**
-   - bagman philosophy: agents should operate within bounds without asking permission every time
+   - steward philosophy: agents should operate within bounds without asking permission every time
    - Confirmation codes are opt-in for exceptional cases only
    - Aligns with Trustee vision: delegated independence, not supervised dependence
 
@@ -356,10 +356,10 @@ op vault create "Trustee-Secrets"
 
 ## Next Steps
 
-1. ✅ **Read bagman documentation** - COMPLETE
-2. ⏸️ **Review bagman source code** - deferred (docs are comprehensive, can review during integration)
+1. ✅ **Read steward documentation** - COMPLETE
+2. ⏸️ **Review steward source code** - deferred (docs are comprehensive, can review during integration)
 3. ✅ **Author reputation check** - COMPLETE (appears legitimate, review code before production)
-4. **Install bagman** - ready when we start Phase 0
+4. **Install steward** - ready when we start Phase 0
 5. **Test locally** - test suite in examples/test_suite.py
 6. **Document API** - examples show usage patterns clearly
 

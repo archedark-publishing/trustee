@@ -13,7 +13,7 @@ Cryptographically enforced spending delegation: Human sets bounds → Agent oper
 | **Mandate System** | ✅ Complete | EIP-712 signed spending authorizations |
 | **Budget Tracking** | ✅ Complete | Per-tx/daily/total limits with transactional reserve+commit |
 | **x402 Payments** | ✅ Complete | Real USDC payments on Base via Coinbase facilitator |
-| **Bagman Security** | ✅ Complete | Session-based key management with auto-expiry |
+| **Steward Security** | ✅ Complete | Session-based key management with auto-expiry |
 | **Audit Trail** | ✅ Complete | Append-only JSONL event logging |
 | **52 tests** | ✅ Passing | Full coverage across all modules |
 
@@ -31,7 +31,7 @@ Current AI agent payment approaches are broken:
 **Trustee** is the middle path: **delegated autonomy with cryptographic enforcement**.
 
 ```
-Josh creates mandate → Bagman creates session → Ada pays within bounds → Full audit trail
+Josh creates mandate → Steward creates session → Ada pays within bounds → Full audit trail
 ```
 
 Even if the agent is compromised, the attacker gets:
@@ -59,7 +59,7 @@ trustee demo
 ┌─────────────────────────────────────────────────────┐
 │                      Trustee                         │
 ├──────────┬──────────┬─────────────┬─────────────────┤
-│ Mandate  │ Bagman   │ x402 Client │ Audit           │
+│ Mandate  │ Steward   │ x402 Client │ Audit           │
 │ Module   │ Security │             │ Trail           │
 │          │          │             │                 │
 │ EIP-712  │ Session  │ Real USDC   │ Append-only     │
@@ -75,8 +75,8 @@ trustee demo
 
 ```
 1. Human creates mandate (spending authorization, EIP-712 signed)
-2. Bagman worker process loads wallet key from 1Password into time-limited session
-3. Agent receives BagmanSigner (can sign, but never sees the key)
+2. Steward worker process loads wallet key from 1Password into time-limited session
+3. Agent receives StewardSigner (can sign, but never sees the key)
 4. Agent hits x402-protected endpoint → gets 402 Payment Required
 5. x402 SDK signs EIP-3009 TransferWithAuthorization
 6. Coinbase facilitator verifies and settles USDC on Base
@@ -89,24 +89,24 @@ trustee demo
 | Module | Purpose |
 |--------|---------|
 | `mandate.py` | EIP-712 signed spending authorizations |
-| `bagman.py` | Session-based key management (1Password → time-limited sessions) |
+| `steward.py` | Session-based key management (1Password → time-limited sessions) |
 | `x402_client.py` | Real x402 payments via official Coinbase SDK |
 | `budget.py` | Transactional spending state with idempotency and tamper checks |
 | `payment.py` | Payment orchestration (verify → check → pay → record) |
 | `audit.py` | Append-only event log for accountability |
 | `cli.py` | Command-line interface for all operations |
 
-## Bagman: Secure Key Management
+## Steward: Secure Key Management
 
 The agent **never** sees the private key. Instead:
 
 ```python
-from trustee.bagman import Bagman, SessionConfig
+from trustee.steward import Steward, SessionConfig
 from trustee.x402_client import X402PaymentClient, X402Config, Network
 
 # Create a time-limited session (worker loads key from 1Password)
-bagman = Bagman()
-session = bagman.create_session(
+steward = Steward()
+session = steward.create_session(
     op_item="trustee-wallet",
     op_vault="MyVault",
     config=SessionConfig(
@@ -117,8 +117,8 @@ session = bagman.create_session(
 )
 
 # Agent gets a signer (never sees the key!)
-client = X402PaymentClient.from_bagman_session(
-    bagman=bagman,
+client = X402PaymentClient.from_steward_session(
+    steward=steward,
     session_id=session.session_id,
     config=X402Config(network=Network.BASE_SEPOLIA),
 )
@@ -127,7 +127,7 @@ client = X402PaymentClient.from_bagman_session(
 result = client.pay(url="https://api.example.com/data")
 
 # When done, destroy session (key wiped from memory)
-bagman.destroy_session(session.session_id)
+steward.destroy_session(session.session_id)
 ```
 
 ## x402: Real Crypto Payments
@@ -184,7 +184,7 @@ trustee demo       # Run full demo flow
 ```
 
 Key handling order of preference:
-1. Best: Bagman session flow (`Bagman.create_session(...)`) with 1Password reference.
+1. Best: Steward session flow (`Steward.create_session(...)`) with 1Password reference.
 2. Good: Hidden CLI prompt entry for key material.
 3. Unsafe fallback: `--unsafe-allow-key-arg` (explicit opt-in; can leak via shell/process args).
 
@@ -225,7 +225,7 @@ Key handling order of preference:
 
 - [x] **Phase 0**: Core mandate + budget + audit trail
 - [x] **Phase 1**: Real x402 payments via Coinbase facilitator (Base Sepolia)
-- [x] **Phase 2**: Bagman secure key management (1Password + session keys)
+- [x] **Phase 2**: Steward secure key management (1Password + session keys)
 - [ ] **Phase 3**: Mainnet deployment (Stripe crypto approved, ready to switch)
 - [ ] **Phase 4**: AP2 mandate protocol integration
 - [ ] **Phase 5**: On-chain budget verification

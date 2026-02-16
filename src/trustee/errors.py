@@ -73,17 +73,17 @@ class DailyLimitError(BudgetError):
 
 # Session errors
 class SessionError(TrusteeError):
-    """Base error for Bagman session issues."""
+    """Base error for Steward session issues."""
     pass
 
 
 class SessionExpiredError(SessionError):
-    """Bagman session has expired."""
+    """Steward session has expired."""
     pass
 
 
 class SessionNotFoundError(SessionError):
-    """Bagman session ID not found."""
+    """Steward session ID not found."""
     pass
 
 

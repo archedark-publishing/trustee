@@ -177,13 +177,13 @@ class X402PaymentClient:
         return cls(account=account, config=config)
 
     @classmethod
-    def from_bagman_session(
+    def from_steward_session(
         cls,
-        bagman: Any,
+        steward: Any,
         session_id: str,
         config: Optional[X402Config] = None,
     ) -> "X402PaymentClient":
-        signer = bagman.get_signer(session_id)
+        signer = steward.get_signer(session_id)
         return cls(signer=signer, config=config)
 
     @property
